@@ -5,7 +5,7 @@ from gift_app.models import Citizen, Gender
 
 
 @pytest.fixture
-async def storage(loop, config):
+async def storage(loop, config, test_db):
     x = Storage(config)
     await x.initialize()
     return x
@@ -27,7 +27,7 @@ def citizen_ivan():
     return x
 
 
-async def test_can_save_simple(storage: Storage, citizen_ivan: Citizen):
+async def test_can_save_citizen(storage: Storage, citizen_ivan: Citizen):
     import_id = 1
     ok = await storage.save_citizen(import_id, citizen_ivan)
     assert ok

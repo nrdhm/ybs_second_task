@@ -6,6 +6,7 @@ from aiohttp import web
 from .views import routes
 from .config import Config
 from .storage import Storage
+from .middleware import error_middleware
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config", type=open)
@@ -25,7 +26,7 @@ async def init_func(argv, config=None):
     storage = Storage(config)
     await storage.initialize()
 
-    app = web.Application()
+    app = web.Application(middlewares=[error_middleware])
     app["config"] = config
     app["storage"] = storage
     app.add_routes(routes)

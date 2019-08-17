@@ -20,3 +20,11 @@ class Citizen:
     birth_date: dt.date
     gender: Gender
     relatives: List["Citizen"] = field(default_factory=lambda: [])
+
+    def __int__(self):
+        return self.citizen_id
+
+
+@dataclass
+class ImportMessage:
+    citizens: List[Citizen]

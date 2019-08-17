@@ -5,9 +5,9 @@ class InvalidUsage(Exception):
         self.status_code = status_code
 
     @staticmethod
-    def not_found(msg='Не найдено'):
+    def not_found(msg="Не найдено"):
         return InvalidUsage(msg, status_code=404)
 
     @staticmethod
-    def bad_request(msg='Неправильный запрос'):
+    def bad_request(msg="Неправильный запрос"):
         return InvalidUsage(msg, status_code=400)

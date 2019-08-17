@@ -29,7 +29,7 @@ class Storage:
     @property
     def engine(self) -> aiopg.sa.Engine:
         if not self._engine:
-            raise RuntimeError('Storage is not initialized')
+            raise RuntimeError("Storage is not initialized")
         return self._engine
 
     async def save_citizen(self, import_id: int, citizen: Citizen) -> bool:
@@ -37,17 +37,19 @@ class Storage:
             async with conn.begin():
                 if not await self._import_exists(conn, import_id):
                     await self._create_import(conn, import_id)
-                await conn.execute(citizen_table.insert().values(
-                    import_id=import_id,
-                    citizen_id=citizen.citizen_id,
-                    town=citizen.town,
-                    street=citizen.street,
-                    building=citizen.building,
-                    apartment=citizen.apartment,
-                    name=citizen.name,
-                    birth_date=citizen.birth_date,
-                    gender=citizen.gender,
-                ))
+                await conn.execute(
+                    citizen_table.insert().values(
+                        import_id=import_id,
+                        citizen_id=citizen.citizen_id,
+                        town=citizen.town,
+                        street=citizen.street,
+                        building=citizen.building,
+                        apartment=citizen.apartment,
+                        name=citizen.name,
+                        birth_date=citizen.birth_date,
+                        gender=citizen.gender,
+                    )
+                )
                 return True
 
     async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
@@ -59,22 +61,26 @@ class Storage:
                 .limit(1)
             )
             if not r.rowcount:
-                raise InvalidUsage.not_found(f'Житель #{citizen_id} из набора #{import_id} не найден')
+                raise InvalidUsage.not_found(
+                    f"Житель #{citizen_id} из набора #{import_id} не найден"
+                )
             row = await r.fetchone()
             citizen = Citizen(
-                citizen_id=row['citizen_id'],
-                town=row['town'],
-                street=row['street'],
-                building=row['building'],
-                apartment=row['apartment'],
-                name=row['name'],
-                birth_date=row['birth_date'],
-                gender=row['gender'],
+                citizen_id=row["citizen_id"],
+                town=row["town"],
+                street=row["street"],
+                building=row["building"],
+                apartment=row["apartment"],
+                name=row["name"],
+                birth_date=row["birth_date"],
+                gender=row["gender"],
             )
             return citizen
 
     async def _import_exists(self, conn: aiopg.sa.SAConnection, import_id: int) -> bool:
-        r = await conn.scalar(import_table.select().where(import_table.c.import_id == import_id).limit(1))
+        r = await conn.scalar(
+            import_table.select().where(import_table.c.import_id == import_id).limit(1)
+        )
         return bool(r)
 
     async def _create_import(self, conn: aiopg.sa.SAConnection, import_id: int) -> bool:

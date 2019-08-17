@@ -39,11 +39,6 @@ class Config:
         self._update()
         return self
 
-    def read_from_env_file(self, file: TextIO) -> "Config":
-        self._file_config_vars = yaml.safe_load(file)
-        self._update()
-        return self
-
     def _update(self):
         config_vars = merge_dicts(
             self._default_config_vars,
