@@ -5,6 +5,8 @@ verify_ssl = true
 
 [dev-packages]
 gift-app = {editable = true,path = "."}
+pytest = "*"
+pytest-aiohttp = "*"
 
 [packages]
 aiohttp = "*"

@@ -14,11 +14,12 @@ class DbConfig:
 
 
 class Config:
-    """Конфиг приложения.
+    '''Конфиг приложения.
 
     Может прочитать конфиг из yaml файла или переменных окружения.
     Переменные окружения перезаписывают все остальные.
-    """
+    '''
+
     db: DbConfig
 
     def __init__(self, overrides=None):
@@ -44,9 +45,15 @@ class Config:
         self.db = DbConfig(**config_vars['db'])
 
     def _read_env(self) -> dict:
-        env_vars = {k.lstrip('GIFT_APP_'): v for k, v in os.environ.items() if k.startswith('GIFT_APP_')}
+        env_vars = {
+            k.lstrip('GIFT_APP_'): v
+            for k, v in os.environ.items()
+            if k.startswith('GIFT_APP_')
+        }
         config_vars = {
-            'db': {k.lstrip('DB_'): v for k, v in env_vars.items() if k.startswith('DB')},
+            'db': {
+                k.lstrip('DB_'): v for k, v in env_vars.items() if k.startswith('DB')
+            }
         }
         return config_vars
 
@@ -56,12 +63,13 @@ _DEFAULT_CONFIG_VARS = {
         'name': 'postgres',
         'password': 'postgres',
         'username': 'postgres',
-        'host': 'localhost,'
+        'host': 'localhost,',
     }
 }
 
 
 missing = object()
+
 
 def merge_dicts(*dicts):
     def merge(a: dict, b: dict) -> dict:
@@ -80,5 +88,6 @@ def merge_dicts(*dicts):
                 continue
             m[key] = b_val if b_val is not missing else a_val
         return m
+
     d = reduce(merge, dicts, {})
     return d
