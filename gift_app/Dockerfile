@@ -21,4 +21,15 @@ RUN apk add g++ \
 
 COPY wait-for.sh /
 
+RUN addgroup -S gift_app \
+    && adduser -S -g gift_app gift_app \
+    && chown gift_app:gift_app /home/gift_app \
+    && chown gift_app:gift_app /opt/app
+
+USER gift_app:gift_app
+
 COPY . /opt/app
+
+WORKDIR /opt/app
+
+EXPOSE 8080
