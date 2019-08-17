@@ -10,6 +10,7 @@ gift-app = {editable = true,path = "."}
 aiohttp = "*"
 cchardet = "*"
 marshmallow = "*"
+pyyaml = "*"
 
 [requires]
 python_version = "3.7"

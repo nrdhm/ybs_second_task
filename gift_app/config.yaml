@@ -1,0 +1,5 @@
+db:
+  name: gift_db
+  username: postgres
+  password: tiech8Ohch
+  host: localhost
