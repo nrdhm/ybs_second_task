@@ -14,11 +14,11 @@ class DbConfig:
 
 
 class Config:
-    '''Конфиг приложения.
+    """Конфиг приложения.
 
     Может прочитать конфиг из yaml файла или переменных окружения.
     Переменные окружения перезаписывают все остальные.
-    '''
+    """
 
     db: DbConfig
 
@@ -30,7 +30,7 @@ class Config:
 
         self._update()
 
-    def read_from_file(self, file: TextIO) -> 'Config':
+    def read_from_file(self, file: TextIO) -> "Config":
         self._file_config_vars = yaml.safe_load(file)
         self._update()
         return self
@@ -42,28 +42,28 @@ class Config:
             self._env_config_vars,
             self._overrides,
         )
-        self.db = DbConfig(**config_vars['db'])
+        self.db = DbConfig(**config_vars["db"])
 
     def _read_env(self) -> dict:
         env_vars = {
-            k.lstrip('GIFT_APP_'): v
+            k.lstrip("GIFT_APP_"): v
             for k, v in os.environ.items()
-            if k.startswith('GIFT_APP_')
+            if k.startswith("GIFT_APP_")
         }
         config_vars = {
-            'db': {
-                k.lstrip('DB_'): v for k, v in env_vars.items() if k.startswith('DB')
+            "db": {
+                k.lstrip("DB_"): v for k, v in env_vars.items() if k.startswith("DB")
             }
         }
         return config_vars
 
 
 _DEFAULT_CONFIG_VARS = {
-    'db': {
-        'name': 'postgres',
-        'password': 'postgres',
-        'username': 'postgres',
-        'host': 'localhost,',
+    "db": {
+        "name": "postgres",
+        "password": "postgres",
+        "username": "postgres",
+        "host": "localhost,",
     }
 }
 

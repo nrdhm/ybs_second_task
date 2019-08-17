@@ -7,6 +7,7 @@ verify_ssl = true
 gift-app = {editable = true,path = "."}
 pytest = "*"
 pytest-aiohttp = "*"
+black = "*"
 
 [packages]
 aiohttp = "*"
