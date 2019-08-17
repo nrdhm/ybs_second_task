@@ -1,4 +1,5 @@
 import argparse
+import logging
 
 from aiohttp import web
 
@@ -15,6 +16,10 @@ async def init_func(argv, config=None):
         config = Config()
         if args.config:
             config.read_from_file(args.config)
+
+    logging.basicConfig(level=logging.INFO)
+
+    logging.info(config)
 
     app = web.Application()
     app["config"] = config

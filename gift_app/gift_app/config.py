@@ -30,6 +30,9 @@ class Config:
 
         self._update()
 
+    def __repr__(self):
+        return f'<Config db={self.db!r}>'
+
     def read_from_file(self, file: TextIO) -> "Config":
         self._file_config_vars = yaml.safe_load(file)
         self._update()
@@ -52,7 +55,7 @@ class Config:
         }
         config_vars = {
             "db": {
-                k.lstrip("DB_"): v for k, v in env_vars.items() if k.startswith("DB")
+                k.lstrip("DB_").lower(): v for k, v in env_vars.items() if k.startswith("DB")
             }
         }
         return config_vars
