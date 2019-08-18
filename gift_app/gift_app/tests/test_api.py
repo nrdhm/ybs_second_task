@@ -165,3 +165,20 @@ async def test_cannot_have_duplicated_citizens(
     assert rv.status == 400, await rv.text()
     jsn = await rv.json()
     assert "citizen_id жителей не могут повторяться" in str(jsn["error"])
+
+
+async def test_cannot_have_negative_citizen_id(
+    http, citizen_ivan_sample, citizen_sergei_sample
+):
+    """citizen_id должен быть неотрицателен.
+    """
+    # ARRANGE
+    citizen_ivan_sample["citizen_id"] = -1
+    citizen_sergei_sample["relatives"] = [-1]
+    data = {"citizens": [citizen_ivan_sample, citizen_sergei_sample]}
+    # ACT
+    rv = await http.post("/imports", json=data)
+    # ASSERT
+    assert rv.status == 400, await rv.text()
+    jsn = await rv.json()
+    assert "citizen_id" in str(jsn["error"])

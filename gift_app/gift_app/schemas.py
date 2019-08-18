@@ -1,4 +1,11 @@
-from marshmallow import Schema, ValidationError, fields, post_load, validates_schema
+from marshmallow import (
+    Schema,
+    ValidationError,
+    fields,
+    post_load,
+    validate,
+    validates_schema,
+)
 
 from .fields import EnumField
 from .models import Citizen, Gender, ImportMessage
@@ -8,7 +15,7 @@ class CitizenSchema(Schema):
     """Схема валидации жителя Citizen.
     """
 
-    citizen_id = fields.Integer(required=True)
+    citizen_id = fields.Integer(required=True, validate=[validate.Range(min=0)])
     town = fields.String(required=True)
     street = fields.String(required=True)
     building = fields.String(required=True)
