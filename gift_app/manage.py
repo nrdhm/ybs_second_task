@@ -17,7 +17,8 @@ def cli():
 @click.option('--config', type=click.File('r'))
 def init_db(config):
     storage = _get_storage()
-    storage.config.read_from_file(config)
+    if config:
+        storage.config.read_from_file(config)
     async def go():
         await storage.initialize()
         await storage_module.create_tables(storage.engine)
@@ -28,7 +29,8 @@ def init_db(config):
 @click.option('--config', type=click.File('r'))
 def drop_db(config):
     storage = _get_storage()
-    storage.config.read_from_file(config)
+    if config:
+        storage.config.read_from_file(config)
     async def go():
         await storage.initialize()
         await storage_module.drop_tables(storage.engine)
