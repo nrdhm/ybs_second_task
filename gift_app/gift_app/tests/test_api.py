@@ -110,3 +110,17 @@ async def test_cannot_have_invalid_gender(
     assert rv.status == 400, await rv.text()
     jsn = await rv.json()
     assert "gender" in str(jsn["error"])
+
+
+async def test_cannot_have_invalid_birth_date(
+    http, citizen_ivan_sample,
+):
+    # ARRANGE
+    citizen_ivan_sample["birth_date"] = "29.02.2019"
+    data = {"citizens": [citizen_ivan_sample]}
+    # ACT
+    rv = await http.post("/imports", json=data)
+    # ASSERT
+    assert rv.status == 400, await rv.text()
+    jsn = await rv.json()
+    assert "birth_date" in str(jsn["error"])
