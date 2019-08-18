@@ -34,12 +34,8 @@ class CitizenSchema(Schema):
                     f"У жителя #{citizen_id} повторяются родственники: {x['relatives']}"
                 )
             relatives_graph[citizen_id] = relatives
-        # XXX При обычном итерировании нельзя менять объект итерирования.
-        while relatives_graph:
-            citizen = next(iter(relatives_graph.keys()))
-            citizen_relatives = relatives_graph[citizen]
-            while citizen_relatives:
-                relative = next(iter(citizen_relatives))
+        for citizen, citizen_relatives in relatives_graph.items():
+            for relative in citizen_relatives:
                 if relative not in relatives_graph:
                     raise ValidationError(
                         f"У жителя #{citizen} не найден родственник #{relative}."
@@ -47,11 +43,8 @@ class CitizenSchema(Schema):
                 relative_relatives = relatives_graph[relative]
                 if citizen not in relative_relatives:
                     raise ValidationError(
-                        f"Родственник #{relative} жителя #{citizen} не признал его."
+                        f"Родственник #{relative} жителя #{citizen} не признает его своим."
                     )
-                relative_relatives.discard(citizen)
-                citizen_relatives.discard(relative)
-            del relatives_graph[citizen]
 
     @validates_schema(pass_many=True)
     def validate_citizens_ids_unique(self, data, many=False, **kwargs):

@@ -103,7 +103,7 @@ async def test_cannot_have_imagined_relative(
     # ASSERT
     assert rv.status == 400, await rv.text()
     jsn = await rv.json()
-    assert "не признал" in str(jsn["error"])
+    assert "не признает" in str(jsn["error"])
 
 
 async def test_cannot_have_invalid_gender(http, citizen_ivan_sample):
