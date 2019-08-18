@@ -1,3 +1,4 @@
+import datetime as dt
 import pytest
 
 
@@ -182,3 +183,21 @@ async def test_cannot_have_negative_citizen_id(
     assert rv.status == 400, await rv.text()
     jsn = await rv.json()
     assert "citizen_id" in str(jsn["error"])
+
+
+async def test_cannot_have_birth_date_in_future(
+    http, citizen_ivan_sample, citizen_sergei_sample
+):
+    """дата рождение не может быть в будущем.
+    """
+    # ARRANGE
+    citizen_ivan_sample["birth_date"] = (
+        dt.date.today() + dt.timedelta(days=1)
+    ).strftime("%d.%m.%Y")
+    data = {"citizens": [citizen_ivan_sample, citizen_sergei_sample]}
+    # ACT
+    rv = await http.post("/imports", json=data)
+    # ASSERT
+    assert rv.status == 400, await rv.text()
+    jsn = await rv.json()
+    assert "birth_date" in str(jsn["error"])

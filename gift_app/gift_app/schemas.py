@@ -1,3 +1,4 @@
+import datetime as dt
 from marshmallow import (
     Schema,
     ValidationError,
@@ -6,24 +7,40 @@ from marshmallow import (
     validate,
     validates_schema,
 )
+from functools import partial
 
 from .fields import EnumField
 from .models import Citizen, Gender, ImportMessage
+
+
+NonEmptyString = partial(
+    fields.String, required=True, validate=[validate.Length(min=1, max=257)]
+)
+NonNegativeInteger = partial(
+    fields.Integer, required=True, validate=[validate.Range(min=0)]
+)
+
+
+def _vaildate_birth_date(birth_date: dt.date):
+    if birth_date >= dt.date.today():
+        raise ValidationError("Дата рождения должна быть меньше текущей даты.")
 
 
 class CitizenSchema(Schema):
     """Схема валидации жителя Citizen.
     """
 
-    citizen_id = fields.Integer(required=True, validate=[validate.Range(min=0)])
-    town = fields.String(required=True)
-    street = fields.String(required=True)
-    building = fields.String(required=True)
-    apartment = fields.Integer(required=True)
-    name = fields.String(required=True)
-    birth_date = fields.Date(required=True, format="%d.%m.%Y")
+    citizen_id = NonNegativeInteger()
+    town = NonEmptyString()
+    street = NonEmptyString()
+    building = NonEmptyString()
+    apartment = NonNegativeInteger()
+    name = NonEmptyString()
+    birth_date = fields.Date(
+        required=True, format="%d.%m.%Y", validate=[_vaildate_birth_date]
+    )
     gender = EnumField(Gender, required=True)
-    relatives = fields.List(fields.Integer, required=True)
+    relatives = fields.List(NonNegativeInteger(), required=True)
 
     @validates_schema(pass_many=True)
     def validate_relatives(self, data, many=False, **kwargs):
