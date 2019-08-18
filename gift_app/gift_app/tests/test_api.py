@@ -98,9 +98,7 @@ async def test_cannot_have_imagined_relative(
     assert "не признал" in str(jsn["error"])
 
 
-async def test_cannot_have_invalid_gender(
-    http, citizen_ivan_sample,
-):
+async def test_cannot_have_invalid_gender(http, citizen_ivan_sample):
     # ARRANGE
     citizen_ivan_sample["gender"] = "helicopter"
     data = {"citizens": [citizen_ivan_sample]}
@@ -112,9 +110,7 @@ async def test_cannot_have_invalid_gender(
     assert "gender" in str(jsn["error"])
 
 
-async def test_cannot_have_invalid_birth_date(
-    http, citizen_ivan_sample,
-):
+async def test_cannot_have_invalid_birth_date(http, citizen_ivan_sample):
     # ARRANGE
     citizen_ivan_sample["birth_date"] = "29.02.2019"
     data = {"citizens": [citizen_ivan_sample]}
@@ -124,3 +120,16 @@ async def test_cannot_have_invalid_birth_date(
     assert rv.status == 400, await rv.text()
     jsn = await rv.json()
     assert "birth_date" in str(jsn["error"])
+
+
+async def test_cannot_have_duplicated_relatives(http, citizen_ivan_sample, citizen_sergei_sample):
+    # ARRANGE
+    citizen_ivan_sample["relatives"].extend(citizen_ivan_sample["relatives"])
+    data = {"citizens": [citizen_ivan_sample, citizen_sergei_sample]}
+    # ACT
+    rv = await http.post("/imports", json=data)
+    # ASSERT
+    assert rv.status == 400, await rv.text()
+    jsn = await rv.json()
+    assert "повторяются родственники" in str(jsn["error"])
+

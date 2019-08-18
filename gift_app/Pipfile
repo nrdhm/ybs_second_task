@@ -18,6 +18,7 @@ pyyaml = "*"
 sqlalchemy = "*"
 aiopg = {extras = ["sa"],version = "*"}
 injector = "*"
+click = "*"
 
 [requires]
 python_version = "3.7"

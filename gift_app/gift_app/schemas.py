@@ -1,10 +1,4 @@
-from marshmallow import (
-    Schema,
-    ValidationError,
-    fields,
-    post_load,
-    validates_schema,
-)
+from marshmallow import Schema, ValidationError, fields, post_load, validates_schema
 
 from .fields import EnumField
 from .models import Citizen, Gender, ImportMessage
@@ -27,11 +21,20 @@ class CitizenSchema(Schema):
     @validates_schema(pass_many=True)
     def validate_relatives(self, data, many=False, **kwargs):
         """Проверить валидность списка родни у всех жителей.
-        Айди родственников должны быть в наборе.
+        Айди родственников должны быть в наборе жителей.
         Родственные связи должны быть двусторонними.
+        У одного жителя не могут родственники не могут повторяться.
         """
-        relatives_graph = {x["citizen_id"]: set(x["relatives"]) for x in data}
-        # XXX При обычном итерировании нельзя изменять объект итерирования.
+        relatives_graph = {}
+        for x in data:
+            relatives = set(x["relatives"])
+            citizen_id = x["citizen_id"]
+            if len(relatives) != len(x["relatives"]):
+                raise ValidationError(
+                    f"У жителя #{citizen_id} повторяются родственники: {x['relatives']}"
+                )
+            relatives_graph[citizen_id] = relatives
+        # XXX При обычном итерировании нельзя менять объект итерирования.
         while relatives_graph:
             citizen = next(iter(relatives_graph.keys()))
             citizen_relatives = relatives_graph[citizen]

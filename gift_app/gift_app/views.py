@@ -1,7 +1,7 @@
 from aiohttp import web
 from injector import inject
 
-from .schemas import CitizenSchema, ImportsSchema
+from .schemas import ImportsSchema
 from .storage import Storage
 
 
@@ -16,7 +16,7 @@ class ImportsView:
         schema = ImportsSchema()
         import_message = schema.load(jsn)
 
-        schema = CitizenSchema(many=True)
-        citizens = schema.dump(import_message.citizens)
+        import_id = await self.storage.import_citizens(import_message)
 
-        return web.json_response(citizens, status=201)
+        result = {"data": {"import_id": import_id}}
+        return web.json_response(result, status=201)

@@ -8,7 +8,7 @@ class EnumField(fields.Field):
     def __init__(self, enum, *a, **kw):
         self.__enum = enum
         self.__valid_names = [x.name for x in enum]
-        kw.setdefault('validate', []).append(validate.OneOf([x.name for x in enum]))
+        kw.setdefault("validate", []).append(validate.OneOf([x.name for x in enum]))
         super().__init__(*a, **kw)
 
     def _serialize(self, value, attr, obj):
