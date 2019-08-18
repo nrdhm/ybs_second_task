@@ -1,10 +1,9 @@
 import aiopg.sa
 import sqlalchemy as sa
-from contextlib import asynccontextmanager
 
 from .config import Config
-from .models import Citizen, Gender
 from .errors import InvalidUsage
+from .models import Citizen, Gender
 
 
 class Storage:

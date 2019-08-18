@@ -1,7 +1,9 @@
-import pytest
 import datetime as dt
-from gift_app.storage import Storage
+
+import pytest
+
 from gift_app.models import Citizen, Gender
+from gift_app.storage import Storage
 
 
 @pytest.fixture

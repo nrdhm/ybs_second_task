@@ -1,7 +1,7 @@
-import logging
-from injector import inject
 from aiohttp import web
-from .schemas import ImportsSchema, CitizenSchema
+from injector import inject
+
+from .schemas import CitizenSchema, ImportsSchema
 from .storage import Storage
 
 

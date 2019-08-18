@@ -1,6 +1,10 @@
-from typing import Tuple, List
-
-from marshmallow import Schema, fields, post_load, validates_schema, ValidationError
+from marshmallow import (
+    Schema,
+    ValidationError,
+    fields,
+    post_load,
+    validates_schema,
+)
 
 from .fields import EnumField
 from .models import Citizen, Gender, ImportMessage

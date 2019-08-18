@@ -1,8 +1,9 @@
 import os
-import yaml
 from dataclasses import dataclass
-from typing import TextIO
 from functools import reduce
+from typing import TextIO
+
+import yaml
 
 
 @dataclass

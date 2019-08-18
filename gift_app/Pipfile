@@ -8,6 +8,7 @@ gift-app = {editable = true,path = "."}
 pytest = "*"
 pytest-aiohttp = "*"
 black = "*"
+isort = "*"
 
 [packages]
 aiohttp = "*"
