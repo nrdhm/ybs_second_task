@@ -14,13 +14,14 @@ from .views import ImportsView
 class ApplicationModule(Module):
     @singleton
     @provider
-    def provide_config(self) -> Config:
+    def provide_config(self, logger: logging.Logger) -> Config:
         config = Config()
         parser = argparse.ArgumentParser()
         parser.add_argument("--config", type=open)
-        args = parser.parse_args(sys.argv[2:])
+        args, _ = parser.parse_known_args(sys.argv)
         if args.config:
             config.read_from_file(args.config)
+        logger.info(config)
         return config
 
     @singleton

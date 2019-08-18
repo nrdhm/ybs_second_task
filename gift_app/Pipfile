@@ -19,6 +19,7 @@ sqlalchemy = "*"
 aiopg = {extras = ["sa"],version = "*"}
 injector = "*"
 click = "*"
+gunicorn = "*"
 
 [requires]
 python_version = "3.7"
