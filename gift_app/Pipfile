@@ -16,6 +16,7 @@ marshmallow = "*"
 pyyaml = "*"
 sqlalchemy = "*"
 aiopg = {extras = ["sa"],version = "*"}
+injector = "*"
 
 [requires]
 python_version = "3.7"

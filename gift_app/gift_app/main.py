@@ -1,33 +1,10 @@
-import argparse
-import logging
-
 from aiohttp import web
+from injector import Injector
 
-from .views import routes
-from .config import Config
-from .storage import Storage
-from .middleware import error_middleware
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--config", type=open)
+from .providers import ApplicationModule
 
 
-async def init_func(argv, config=None):
-    if not config:
-        args = parser.parse_args(argv)
-        config = Config()
-        if args.config:
-            config.read_from_file(args.config)
-
-    logging.basicConfig(level=logging.INFO)
-
-    logging.info(config)
-
-    storage = Storage(config)
-    await storage.initialize()
-
-    app = web.Application(middlewares=[error_middleware])
-    app["config"] = config
-    app["storage"] = storage
-    app.add_routes(routes)
+async def init_func(argv, extra_modules=[]):
+    injector = Injector(modules=[ApplicationModule, *extra_modules])
+    app = injector.get(web.Application)
     return app

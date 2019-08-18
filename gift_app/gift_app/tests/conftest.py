@@ -1,5 +1,6 @@
 import aiopg.sa
 import pytest
+from injector import Binder
 
 from gift_app.config import Config
 from gift_app.main import init_func
@@ -15,7 +16,10 @@ def config():
 
 @pytest.fixture
 async def http(loop, aiohttp_client, config):
-    app = await init_func([], config=config)
+    def configuraiton(binder: Binder):
+        binder.bind(Config, config)
+
+    app = await init_func([], extra_modules=[configuraiton])
     return await aiohttp_client(app)
 
 
