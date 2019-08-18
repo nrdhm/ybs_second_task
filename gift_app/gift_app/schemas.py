@@ -50,9 +50,9 @@ class CitizenSchema(Schema):
     def validate_citizens_ids_unique(self, data, many=False, **kwargs):
         """У жителей должны быть уникальные citizen_id.
         """
-        ids = [x['citizen_id'] for x in data]
+        ids = [x["citizen_id"] for x in data]
         if len(ids) != len(set(ids)):
-            raise ValidationError(f'citizen_id жителей не могут повторяться.')
+            raise ValidationError(f"citizen_id жителей не могут повторяться.")
 
     @post_load(pass_many=True)
     def make_citizens(self, data, many=False, **kwargs):

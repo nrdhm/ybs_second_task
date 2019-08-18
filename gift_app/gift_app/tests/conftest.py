@@ -1,4 +1,5 @@
-import aiopg.sa
+import asyncpg.connection
+import asyncpgsa
 import pytest
 from injector import Binder
 
@@ -36,17 +37,20 @@ def db_url(config, db_name):
 
 @pytest.fixture
 async def test_db(loop, config):
-    async with aiopg.sa.create_engine(db_url(config, "postgres")) as engine:
-        async with engine.acquire() as conn:
-            # скидываем левые соединения к тестовой базе данных
-            await conn.execute(
-                """SELECT pg_terminate_backend(pg_stat_activity.pid)
-                   FROM pg_stat_activity
-                   WHERE pg_stat_activity.datname = 'test_db'"""
-            )
-            await conn.execute("DROP DATABASE IF EXISTS test_db")
-            await conn.execute("CREATE DATABASE test_db")
+    pool = await asyncpgsa.create_pool(dsn=db_url(config, "postgres"))
+    async with pool.acquire() as conn:  # type: asyncpg.connection.Connection
+        # скидываем левые соединения к тестовой базе данных
+        await conn.execute(
+            """SELECT pg_terminate_backend(pg_stat_activity.pid)
+                FROM pg_stat_activity
+                WHERE pg_stat_activity.datname = 'test_db'"""
+        )
+        await conn.execute("DROP DATABASE IF EXISTS test_db")
+        await conn.execute("CREATE DATABASE test_db")
+    await pool.close()
 
-        async with aiopg.sa.create_engine(db_url(config, "test_db")) as test_engine:
-            await create_tables(test_engine)
-            yield test_engine
+    pool = await asyncpgsa.create_pool(dsn=db_url(config, "test_db"))
+    async with pool.acquire() as conn:  # type: asyncpg.connection.Connection
+        await create_tables(conn)
+        yield conn
+    await pool.close()

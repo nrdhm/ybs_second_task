@@ -134,7 +134,9 @@ async def test_cannot_have_invalid_birth_date(http, citizen_ivan_sample):
     assert "birth_date" in str(jsn["error"])
 
 
-async def test_cannot_have_duplicated_relatives(http, citizen_ivan_sample, citizen_sergei_sample):
+async def test_cannot_have_duplicated_relatives(
+    http, citizen_ivan_sample, citizen_sergei_sample
+):
     """Родственники одного жителя не могут повторятся.
     """
     # ARRANGE
@@ -148,7 +150,9 @@ async def test_cannot_have_duplicated_relatives(http, citizen_ivan_sample, citiz
     assert "повторяются родственники" in str(jsn["error"])
 
 
-async def test_cannot_have_duplicated_citizens(http, citizen_ivan_sample, citizen_sergei_sample):
+async def test_cannot_have_duplicated_citizens(
+    http, citizen_ivan_sample, citizen_sergei_sample
+):
     """У каждого жителя одного набора должен быть уникальный citizen_id.
     """
     # ARRANGE

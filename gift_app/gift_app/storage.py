@@ -1,6 +1,7 @@
 from typing import List
 
-import aiopg.sa
+import asyncpg
+import asyncpgsa
 import sqlalchemy as sa
 
 from .config import Config
@@ -11,12 +12,12 @@ from .models import Citizen, Gender, ImportMessage
 class Storage:
     def __init__(self, config: Config):
         self.config = config
-        self._engine = None
+        self._pool = None
 
     async def initialize(self):
         DSN = "postgresql://{username}:{password}@{host}:{port}/{db_name}"
-        engine = await aiopg.sa.create_engine(
-            DSN.format(
+        pool = await asyncpgsa.create_pool(
+            dsn=DSN.format(
                 username=self.config.db.username,
                 password=self.config.db.password,
                 host=self.config.db.host,
@@ -24,55 +25,77 @@ class Storage:
                 db_name=self.config.db.name,
             )
         )
-        self._engine = engine
+        self._pool = pool
         return self
 
     @property
-    def engine(self) -> aiopg.sa.Engine:
-        if not self._engine:
+    def pool(self) -> asyncpg.pool.Pool:
+        if not self._pool:
             raise RuntimeError("Storage is not initialized")
-        return self._engine
+        return self._pool
 
     async def save_citizen(self, import_id: int, citizen: Citizen) -> bool:
-        async with self.engine.acquire() as conn:  # type: aiopg.sa.SAConnection
-            async with conn.begin():
-                if not await self._import_exists(conn, import_id):
-                    await self._create_import(conn, import_id)
-                await self._save_citizen(conn, import_id, citizen)
-                return True
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            if not await self._import_exists(conn, import_id):
+                await self._create_import(conn, import_id)
+            await self._save_citizen(conn, import_id, citizen)
+            return True
 
     async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
-        async with self.engine.acquire() as conn:  # type: aiopg.sa.SAConnection
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
             return await self._retrieve_citizen(conn, import_id, citizen_id)
 
     async def retrieve_citizen_relatives(
         self, import_id: int, citizen_id: int
     ) -> List[Citizen]:
-        async with self.engine.acquire() as conn:  # type: aiopg.sa.SAConnection
-            r = await conn.execute(
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            r = await conn.fetch(
                 relative_table.select()
                 .where(relative_table.c.import_id == import_id)
                 .where(relative_table.c.citizen_id == citizen_id)
             )
             relative_ids = []
-            async for row in r:
+            for row in r:
                 relative_ids.append(row["relative_citizen_id"])
             relatives = await self._retrieve_citizens(conn, import_id, relative_ids)
             return relatives
 
     async def import_citizens(self, import_message: ImportMessage) -> int:
-        async with self.engine.acquire() as conn:  # type: aiopg.sa.SAConnection
-            async with conn.begin():
-                import_id = await self._next_import_id(conn)
-                await self._create_import(conn, import_id)
-                for citizen in import_message.citizens:
-                    await self._save_citizen(conn, import_id, citizen)
-                return import_id
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            import_id = await self._next_import_id(conn)
+            await self._create_import(conn, import_id)
+            citizen_insert_args = []
+            relative_insert_args = []
+            for citizen in import_message.citizens:
+                citizen_insert_args.append(
+                    dict(
+                        import_id=import_id,
+                        citizen_id=citizen.citizen_id,
+                        town=citizen.town,
+                        street=citizen.street,
+                        building=citizen.building,
+                        apartment=citizen.apartment,
+                        name=citizen.name,
+                        birth_date=citizen.birth_date,
+                        gender=citizen.gender,
+                    )
+                )
+                for relative in citizen.relatives:
+                    relative_insert_args.append(
+                        dict(
+                            import_id=import_id,
+                            citizen_id=citizen.citizen_id,
+                            relative_citizen_id=relative.citizen_id,
+                        )
+                    )
+            await conn.fetchrow(citizen_table.insert().values(citizen_insert_args))
+            await conn.fetchrow(relative_table.insert().values(relative_insert_args))
+            return import_id
 
     async def _save_citizen(
-        self, conn: aiopg.sa.SAConnection, import_id: int, citizen: Citizen
+        self, conn: asyncpg.connection.Connection, import_id: int, citizen: Citizen
     ) -> bool:
-        await conn.execute(
+        await conn.fetchrow(
             citizen_table.insert().values(
                 import_id=import_id,
                 citizen_id=citizen.citizen_id,
@@ -86,7 +109,7 @@ class Storage:
             )
         )
         for relative in citizen.relatives:
-            await conn.execute(
+            await conn.fetchrow(
                 relative_table.insert().values(
                     import_id=import_id,
                     citizen_id=citizen.citizen_id,
@@ -96,23 +119,22 @@ class Storage:
         return True
 
     async def _retrieve_citizen(
-        self, conn: aiopg.sa.SAConnection, import_id: int, citizen_id: int
+        self, conn: asyncpg.connection.Connection, import_id: int, citizen_id: int
     ) -> Citizen:
-        r = await conn.execute(
+        row = await conn.fetchrow(
             citizen_table.select()
             .where(citizen_table.c.citizen_id == citizen_id)
             .where(citizen_table.c.import_id == import_id)
             .limit(1)
         )
-        if not r.rowcount:
+        if not row:
             raise InvalidUsage.not_found(
                 f"Житель #{citizen_id} из набора #{import_id} не найден"
             )
-        row = await r.fetchone()
         citizen = self._citizen_from_row(row)
         return citizen
 
-    def _citizen_from_row(self, row: aiopg.sa.connection.ResultProxy) -> Citizen:
+    def _citizen_from_row(self, row) -> Citizen:
         citizen = Citizen(
             citizen_id=row["citizen_id"],
             town=row["town"],
@@ -121,45 +143,49 @@ class Storage:
             apartment=row["apartment"],
             name=row["name"],
             birth_date=row["birth_date"],
-            gender=row["gender"],
+            gender=Gender.male if row["gender"] == "male" else Gender.female,
         )
         return citizen
 
     async def _retrieve_citizens(
-        self, conn: aiopg.sa.SAConnection, import_id: int, citizen_ids: List[int]
+        self, conn, import_id: int, citizen_ids: List[int]
     ) -> List[Citizen]:
-        r = await conn.execute(
+        rows = await conn.fetch(
             citizen_table.select()
             .where(citizen_table.c.import_id == import_id)
             .where(citizen_table.c.citizen_id.in_(citizen_ids))
         )
-        if r.rowcount != len(citizen_ids):
+        if len(rows) != len(citizen_ids):
             # Кто-то из списка не был найден в базе данных.
-            assert r.rowcount < len(citizen_ids)
+            assert len(rows) < len(citizen_ids)
             ids = set(citizen_ids)
-            async for row in r:
+            for row in rows:
                 ids.remove(row["id"])
             raise InvalidUsage.not_found(
                 f"Некоторые жители не были найдены: {''.join(str(x) for x in ids)}"
             )
         citizens = []
-        async for row in r:
+        for row in rows:
             citizen = self._citizen_from_row(row)
             citizens.append(citizen)
         return citizens
 
-    async def _import_exists(self, conn: aiopg.sa.SAConnection, import_id: int) -> bool:
-        r = await conn.scalar(
+    async def _import_exists(
+        self, conn: asyncpg.connection.Connection, import_id: int
+    ) -> bool:
+        r = await conn.fetchval(
             import_table.select().where(import_table.c.import_id == import_id).limit(1)
         )
         return bool(r)
 
-    async def _create_import(self, conn: aiopg.sa.SAConnection, import_id: int) -> int:
-        r = await conn.execute(import_table.insert().values(import_id=import_id))
-        return bool(r.rowcount)
+    async def _create_import(
+        self, conn: asyncpg.connection.Connection, import_id: int
+    ) -> int:
+        r = await conn.fetchrow(import_table.insert().values(import_id=import_id))
+        return bool(r)
 
-    async def _next_import_id(self, conn: aiopg.sa.SAConnection) -> int:
-        t = await conn.scalar(sa.select([import_seq.next_value()]))
+    async def _next_import_id(self, conn: asyncpg.connection.Connection) -> int:
+        t = await conn.fetchval(sa.select([import_seq.next_value()]))
         return t
 
 
@@ -217,27 +243,25 @@ relative_table = sa.Table(
 )
 
 
-async def create_tables(engine: aiopg.sa.Engine):
-    async with engine.acquire() as conn:
-        stmt = sa.dialects.postgresql.CreateEnumType(gender_enum)
+async def create_tables(conn: asyncpg.connection.Connection):
+    stmt = sa.dialects.postgresql.CreateEnumType(gender_enum)
+    await conn.execute(stmt)
+
+    stmt = sa.schema.CreateSequence(import_seq)
+    await conn.execute(stmt)
+
+    for table in [import_table, citizen_table, relative_table]:
+        stmt = sa.schema.CreateTable(table)
         await conn.execute(stmt)
 
-        stmt = sa.schema.CreateSequence(import_seq)
+
+async def drop_tables(conn: asyncpg.connection.Connection):
+    for table in [import_table, citizen_table, relative_table]:
+        stmt = f"DROP TABLE IF EXISTS {table.name}"
         await conn.execute(stmt)
 
-        for table in [import_table, citizen_table, relative_table]:
-            stmt = sa.schema.CreateTable(table)
-            await conn.execute(stmt)
+    stmt = f"DROP TYPE IF EXISTS {gender_enum.name}"
+    await conn.execute(stmt)
 
-
-async def drop_tables(engine: aiopg.sa.Engine):
-    async with engine.acquire() as conn:
-        for table in [import_table, citizen_table, relative_table]:
-            stmt = f"DROP TABLE IF EXISTS {table.name}"
-            await conn.execute(stmt)
-
-        stmt = f"DROP TYPE IF EXISTS {gender_enum.name}"
-        await conn.execute(stmt)
-
-        stmt = f"DROP SEQUENCE IF EXISTS {import_seq.name}"
-        await conn.execute(stmt)
+    stmt = f"DROP SEQUENCE IF EXISTS {import_seq.name}"
+    await conn.execute(stmt)
