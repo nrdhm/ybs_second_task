@@ -72,12 +72,17 @@ async def storage(loop, config, test_db, logger):
 
 
 @pytest.fixture
-async def http(loop, test_db, aiohttp_client, config, storage):
+async def app(loop, test_db, config, storage):
     def configuraiton(binder: Binder):
         binder.bind(Config, config)
         binder.bind(Storage, storage)
 
     app = await init_func([], extra_modules=[configuraiton])
+    return app
+
+
+@pytest.fixture
+async def http(loop, aiohttp_client, app):
     return await aiohttp_client(app)
 
 
@@ -195,7 +200,7 @@ def citizen_maria():
 async def first_citizens(citizen_ivan, citizen_sergei, citizen_maria):
     citizen_ivan.relatives = [citizen_sergei.citizen_id]
     citizen_sergei.relatives = [citizen_ivan.citizen_id]
-    return [citizen_ivan, citizen_sergei]
+    return [citizen_ivan, citizen_sergei, citizen_maria]
 
 
 @pytest.fixture

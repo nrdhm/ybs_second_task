@@ -6,7 +6,7 @@ from aiohttp import web
 from injector import Module, provider, singleton
 
 from .config import Config
-from .middleware import error_middleware
+from .middleware import create_error_middleware
 from .storage import Storage
 from .views import ImportsView
 
@@ -33,16 +33,16 @@ class ApplicationModule(Module):
 
     @singleton
     @provider
-    def provide_storage(self, config: Config) -> Storage:
-        storage = Storage(config)
+    def provide_storage(self, config: Config, logger: logging.Logger) -> Storage:
+        storage = Storage(config, logger)
         return storage
 
     @singleton
     @provider
     def provide_app(
-        self, config: Config, storage: Storage, imports_views: ImportsView
+        self, config: Config, storage: Storage, logger: logging.Logger, imports_views: ImportsView,
     ) -> web.Application:
-        app = web.Application(middlewares=[error_middleware])
+        app = web.Application(middlewares=[create_error_middleware(logger)])
         app.router.add_routes([web.post("/imports", imports_views.import_citizens)])
 
         async def init_storage(app):
