@@ -19,7 +19,7 @@ class Citizen:
     name: str
     birth_date: dt.date
     gender: Gender
-    relatives: List["Citizen"] = field(default_factory=lambda: [])
+    relatives: List[int] = field(default_factory=lambda: [])
 
     def __int__(self):
         return self.citizen_id

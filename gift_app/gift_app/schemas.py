@@ -5,6 +5,7 @@ from marshmallow import (
     fields,
     post_load,
     validate,
+    validates,
     validates_schema,
 )
 from functools import partial
@@ -13,12 +14,8 @@ from .fields import EnumField
 from .models import Citizen, Gender, ImportMessage
 
 
-NonEmptyString = partial(
-    fields.String, required=True, validate=[validate.Length(min=1, max=257)]
-)
-NonNegativeInteger = partial(
-    fields.Integer, required=True, validate=[validate.Range(min=0)]
-)
+NonEmptyString = partial(fields.String, validate=[validate.Length(min=1, max=257)])
+NonNegativeInteger = partial(fields.Integer, validate=[validate.Range(min=0)])
 
 
 def _vaildate_birth_date(birth_date: dt.date):
@@ -26,19 +23,20 @@ def _vaildate_birth_date(birth_date: dt.date):
         raise ValidationError("Дата рождения должна быть меньше текущей даты.")
 
 
+BirthDate = partial(fields.Date, format="%d.%m.%Y", validate=[_vaildate_birth_date])
+
+
 class CitizenSchema(Schema):
     """Схема валидации жителя Citizen.
     """
 
-    citizen_id = NonNegativeInteger()
-    town = NonEmptyString()
-    street = NonEmptyString()
-    building = NonEmptyString()
-    apartment = NonNegativeInteger()
-    name = NonEmptyString()
-    birth_date = fields.Date(
-        required=True, format="%d.%m.%Y", validate=[_vaildate_birth_date]
-    )
+    citizen_id = NonNegativeInteger(required=True)
+    town = NonEmptyString(required=True)
+    street = NonEmptyString(required=True)
+    building = NonEmptyString(required=True)
+    apartment = NonNegativeInteger(required=True)
+    name = NonEmptyString(required=True)
+    birth_date = BirthDate(required=True)
     gender = EnumField(Gender, required=True)
     relatives = fields.List(NonNegativeInteger(), required=True)
 
@@ -104,6 +102,22 @@ class CitizenSchema(Schema):
                 relative = citizen_for_id[relative_id]
                 citizen.relatives.append(relative)
         return citizen_for_id.values()
+
+
+class CitizenUpdateSchema(Schema):
+    town = NonEmptyString()
+    street = NonEmptyString()
+    building = NonEmptyString()
+    apartment = NonNegativeInteger()
+    name = NonEmptyString()
+    birth_date = BirthDate()
+    gender = EnumField(Gender)
+    relatives = fields.List(NonNegativeInteger())
+
+    @validates('relatives')
+    def validate_relatives(self, relatives):
+        if len(relatives) != len(set(relatives)):
+            raise ValidationError(f"Список родственников неуникален")
 
 
 class ImportsSchema(Schema):

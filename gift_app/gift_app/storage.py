@@ -1,4 +1,5 @@
-from typing import List
+import logging
+from typing import List, Optional
 
 import asyncpg
 import asyncpgsa
@@ -10,8 +11,9 @@ from .models import Citizen, Gender, ImportMessage
 
 
 class Storage:
-    def __init__(self, config: Config):
+    def __init__(self, config: Config, logger: logging.Logger):
         self.config = config
+        self.logger = logger
         self._pool = None
 
     async def initialize(self):
@@ -34,39 +36,13 @@ class Storage:
             raise RuntimeError("Storage is not initialized")
         return self._pool
 
-    async def save_citizen(self, import_id: int, citizen: Citizen) -> bool:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
-            if not await self._import_exists(conn, import_id):
-                await self._create_import(conn, import_id)
-            await self._save_citizen(conn, import_id, citizen)
-            return True
-
-    async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
-            return await self._retrieve_citizen(conn, import_id, citizen_id)
-
-    async def retrieve_citizen_relatives(
-        self, import_id: int, citizen_id: int
-    ) -> List[Citizen]:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
-            r = await conn.fetch(
-                relative_table.select()
-                .where(relative_table.c.import_id == import_id)
-                .where(relative_table.c.citizen_id == citizen_id)
-            )
-            relative_ids = []
-            for row in r:
-                relative_ids.append(row["relative_citizen_id"])
-            relatives = await self._retrieve_citizens(conn, import_id, relative_ids)
-            return relatives
-
-    async def import_citizens(self, import_message: ImportMessage) -> int:
+    async def import_citizens(self, citizens: List[Citizen]) -> int:
         async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
             import_id = await self._next_import_id(conn)
             await self._create_import(conn, import_id)
             citizen_insert_args = []
             relative_insert_args = []
-            for citizen in import_message.citizens:
+            for citizen in citizens:
                 citizen_insert_args.append(
                     dict(
                         import_id=import_id,
@@ -85,42 +61,118 @@ class Storage:
                         dict(
                             import_id=import_id,
                             citizen_id=citizen.citizen_id,
-                            relative_citizen_id=relative.citizen_id,
+                            relative_citizen_id=relative,
                         )
                     )
             await conn.fetchrow(citizen_table.insert().values(citizen_insert_args))
             await conn.fetchrow(relative_table.insert().values(relative_insert_args))
             return import_id
 
-    async def _save_citizen(
-        self, conn: asyncpg.connection.Connection, import_id: int, citizen: Citizen
-    ) -> bool:
-        await conn.fetchrow(
-            citizen_table.insert().values(
-                import_id=import_id,
-                citizen_id=citizen.citizen_id,
-                town=citizen.town,
-                street=citizen.street,
-                building=citizen.building,
-                apartment=citizen.apartment,
-                name=citizen.name,
-                birth_date=citizen.birth_date,
-                gender=citizen.gender,
-            )
+    async def retrieve_citizen(
+        self, import_id: int, citizen_id: int
+    ) -> Citizen:
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
+            if not citizen:
+                raise InvalidUsage.not_found(
+                    f"Житель #{citizen_id} из набора #{import_id} не найден"
+                )
+            return citizen
+
+    async def update_citizen(
+        self, import_id: int, citizen_id: int, citizen_update: dict
+    ) -> Citizen:
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            if "relatives" in citizen_update:
+                await self._update_citizen_relatives(
+                    conn, import_id, citizen_id, citizen_update.pop("relatives")
+                )
+            if citizen_update:
+                stmt = citizen_table.update().values(**citizen_update)
+                await conn.fetchrow(stmt)
+            new_citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
+            assert new_citizen
+            return new_citizen
+
+    async def _update_citizen_relatives(
+        self,
+        conn: asyncpg.connection.Connection,
+        import_id: int,
+        citizen_id: int,
+        new_relatives: List[int],
+    ) -> List[int]:
+        new_relatives_set = set(new_relatives)
+        old_relatives = set(
+            await self._retrieve_citizen_relatives_ids(conn, import_id, citizen_id)
         )
-        for relative in citizen.relatives:
+        to_delete = old_relatives - new_relatives_set
+        to_add = new_relatives_set - old_relatives
+        for relative in to_delete:
+            await conn.fetchrow(
+                relative_table.delete()
+                .where(relative_table.c.import_id == import_id)
+                .where(relative_table.c.citizen_id == citizen_id)
+                .where( relative_table.c.relative_citizen_id == relative)
+            )
+            await conn.fetchrow(
+                relative_table.delete()
+                .where(relative_table.c.import_id == import_id)
+                .where(relative_table.c.citizen_id == relative)
+                .where( relative_table.c.relative_citizen_id == citizen_id)
+            )
+        for relative in to_add:
+            if not await self._check_citizen_exists(conn, import_id, relative):
+                raise InvalidUsage.bad_request(f'Родственник #{relative} не существует в наборе #{import_id}.')
             await conn.fetchrow(
                 relative_table.insert().values(
                     import_id=import_id,
-                    citizen_id=citizen.citizen_id,
-                    relative_citizen_id=relative.citizen_id,
+                    citizen_id=citizen_id,
+                    relative_citizen_id=relative,
                 )
             )
-        return True
+            await conn.fetchrow(
+                relative_table.insert().values(
+                    import_id=import_id,
+                    citizen_id=relative,
+                    relative_citizen_id=citizen_id,
+                )
+            )
+        saved_relatives = await self._retrieve_citizen_relatives_ids(
+            conn, import_id, citizen_id
+        )
+        return saved_relatives
+
+    async def _retrieve_citizen_relatives_ids(
+        self, conn: asyncpg.connection.Connection, import_id: int, citizen_id: int
+    ) -> List[int]:
+        r = await conn.fetch(
+            relative_table.select()
+            .where(relative_table.c.import_id == import_id)
+            .where(relative_table.c.citizen_id == citizen_id)
+        )
+        relative_ids = []
+        for row in r:
+            relative_ids.append(row["relative_citizen_id"])
+        return relative_ids
+
+    async def next_import_id(self) -> int:
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            return await self._next_import_id(conn)
+
+    async def _check_citizen_exists(
+        self, conn: asyncpg.connection.Connection, import_id: int, citizen_id: int
+    ) -> bool:
+        val = await conn.fetchval(
+            citizen_table.select()
+            .where(citizen_table.c.citizen_id == citizen_id)
+            .where(citizen_table.c.import_id == import_id)
+            .limit(1)
+        )
+        return bool(val)
 
     async def _retrieve_citizen(
         self, conn: asyncpg.connection.Connection, import_id: int, citizen_id: int
-    ) -> Citizen:
+    ) -> Optional[Citizen]:
         row = await conn.fetchrow(
             citizen_table.select()
             .where(citizen_table.c.citizen_id == citizen_id)
@@ -128,26 +180,13 @@ class Storage:
             .limit(1)
         )
         if not row:
-            raise InvalidUsage.not_found(
-                f"Житель #{citizen_id} из набора #{import_id} не найден"
-            )
-        citizen = self._citizen_from_row(row)
+            return None
+        citizen = _citizen_from_row(row)
+        relatives = await self._retrieve_citizen_relatives_ids(conn, import_id, citizen_id)
+        citizen.relatives = relatives
         return citizen
 
-    def _citizen_from_row(self, row) -> Citizen:
-        citizen = Citizen(
-            citizen_id=row["citizen_id"],
-            town=row["town"],
-            street=row["street"],
-            building=row["building"],
-            apartment=row["apartment"],
-            name=row["name"],
-            birth_date=row["birth_date"],
-            gender=Gender.male if row["gender"] == "male" else Gender.female,
-        )
-        return citizen
-
-    async def _retrieve_citizens(
+    async def _retrieve_many_citizens(
         self, conn, import_id: int, citizen_ids: List[int]
     ) -> List[Citizen]:
         rows = await conn.fetch(
@@ -166,7 +205,7 @@ class Storage:
             )
         citizens = []
         for row in rows:
-            citizen = self._citizen_from_row(row)
+            citizen = _citizen_from_row(row)
             citizens.append(citizen)
         return citizens
 
@@ -265,3 +304,16 @@ async def drop_tables(conn: asyncpg.connection.Connection):
 
     stmt = f"DROP SEQUENCE IF EXISTS {import_seq.name}"
     await conn.execute(stmt)
+
+def _citizen_from_row(row) -> Citizen:
+    citizen = Citizen(
+        citizen_id=row["citizen_id"],
+        town=row["town"],
+        street=row["street"],
+        building=row["building"],
+        apartment=row["apartment"],
+        name=row["name"],
+        birth_date=row["birth_date"],
+        gender=Gender.male if row["gender"] == "male" else Gender.female,
+    )
+    return citizen
