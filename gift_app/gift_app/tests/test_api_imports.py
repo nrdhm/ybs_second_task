@@ -3,52 +3,6 @@ import pytest
 
 
 @pytest.fixture
-def citizen_ivan_sample():
-    d = {
-        "citizen_id": 1,
-        "town": "Москва",
-        "street": "Льва Толстого",
-        "building": "16к7стр5",
-        "apartment": 7,
-        "name": "Иванов Иван Иванович",
-        "birth_date": "26.12.1986",
-        "gender": "male",
-        "relatives": [2],  # id родственников
-    }
-    return d
-
-
-@pytest.fixture
-def citizen_sergei_sample():
-    return {
-        "citizen_id": 2,
-        "town": "Москва",
-        "street": "Льва Толстого",
-        "building": "16к7стр5",
-        "apartment": 7,
-        "name": "Иванов Сергей Иванович",
-        "birth_date": "01.04.1997",
-        "gender": "male",
-        "relatives": [1],
-    }
-
-
-@pytest.fixture
-def citizen_maria_sample():
-    return {
-        "citizen_id": 3,
-        "town": "Керчь",
-        "street": "Иосифа Бродского",
-        "building": "2",
-        "apartment": 11,
-        "name": "Романова Мария Леонидовна",
-        "birth_date": "23.11.1986",
-        "gender": "female",
-        "relatives": [],
-    }
-
-
-@pytest.fixture
 def imports_sample(citizen_ivan_sample, citizen_sergei_sample, citizen_maria_sample):
     d = {"citizens": [citizen_ivan_sample, citizen_sergei_sample, citizen_maria_sample]}
     return d
