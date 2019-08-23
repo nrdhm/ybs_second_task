@@ -39,7 +39,6 @@ class ImportsView:
         citizen = await self.storage.update_citizen(
             import_id, citizen_id, citizen_update
         )
-
         schema = CitizenSchema()
         result = {"data": schema.dump(citizen)}
         return web.json_response(result, status=200)

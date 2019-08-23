@@ -81,6 +81,8 @@ class Storage:
 
     async def list_citizens(self, import_id: int) -> List[Citizen]:
         async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            if not await self._import_exists(conn, import_id):
+                raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
             citizens = await self._list_citizens(conn, import_id)
             return citizens
 

@@ -45,3 +45,16 @@ async def test_can_list_citizens(http, imported_first_citizens, married_ivan_and
             },
         ]
     }
+
+
+async def test_cannot_list_unknown_import(
+    http, imported_first_citizens, married_ivan_and_maria
+):
+    """Можно получить список жителей.
+    """
+    # ARRANGE
+    import_id = 111
+    # ACT
+    rv = await http.get(f"/imports/{import_id}/citizens")
+    # ASSERT
+    assert rv.status == 404, await rv.json()
