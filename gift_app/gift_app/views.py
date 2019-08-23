@@ -43,3 +43,10 @@ class ImportsView:
         schema = CitizenSchema()
         result = {"data": schema.dump(citizen)}
         return web.json_response(result, status=200)
+
+    async def list_citizens(self, request: web.Request):
+        import_id = int(request.match_info["import_id"])
+        citizens = await self.storage.list_citizens(import_id)
+        schema = CitizenSchema(many=True)
+        result = {"data": schema.dump(citizens)}
+        return web.json_response(result, status=200)

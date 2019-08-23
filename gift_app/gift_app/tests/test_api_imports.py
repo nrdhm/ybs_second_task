@@ -47,7 +47,7 @@ async def test_cannot_have_a_missing_relative(http, citizen_ivan_sample):
 async def test_cannot_have_imagined_relative(
     http, citizen_ivan_sample, citizen_sergei_sample
 ):
-    """Родственные связи должны быть обоюдными.
+    """Родственные связи должны быть двухсторонними.
     """
     # ARRANGE
     citizen_ivan_sample["relatives"][:] = [citizen_sergei_sample["citizen_id"]]
@@ -142,7 +142,7 @@ async def test_cannot_have_negative_citizen_id(
 async def test_cannot_have_birth_date_in_future(
     http, citizen_ivan_sample, citizen_sergei_sample
 ):
-    """дата рождение не может быть в будущем.
+    """Дата рождение не может быть в будущем.
     """
     # ARRANGE
     citizen_ivan_sample["birth_date"] = (

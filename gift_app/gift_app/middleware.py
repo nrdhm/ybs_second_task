@@ -15,6 +15,8 @@ def create_error_middleware(logger: logging.Logger):
             return web.json_response({"error": exc.normalized_messages()}, status=400)
         except InvalidUsage as exc:
             return web.json_response({"error": exc.message}, status=exc.status_code)
+        except web.HTTPError as exc:
+            return web.json_response({"error": exc.reason}, status=exc.status_code)
         except Exception as exc:
             logger.exception(exc)
             return web.json_response({"error": "Server got itself in trouble"}, status=500)
