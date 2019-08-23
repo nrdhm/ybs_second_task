@@ -112,13 +112,13 @@ class Storage:
                 relative_table.delete()
                 .where(relative_table.c.import_id == import_id)
                 .where(relative_table.c.citizen_id == citizen_id)
-                .where( relative_table.c.relative_citizen_id == relative)
+                .where(relative_table.c.relative_citizen_id == relative)
             )
             await conn.fetchrow(
                 relative_table.delete()
                 .where(relative_table.c.import_id == import_id)
                 .where(relative_table.c.citizen_id == relative)
-                .where( relative_table.c.relative_citizen_id == citizen_id)
+                .where(relative_table.c.relative_citizen_id == citizen_id)
             )
         for relative in to_add:
             if not await self._check_citizen_exists(conn, import_id, relative):

@@ -210,3 +210,28 @@ async def first_citizens(citizen_ivan, citizen_sergei, citizen_maria):
 async def imported_first_citizens(storage, first_citizens):
     import_id = await storage.import_citizens(first_citizens)
     return import_id
+
+
+@pytest.fixture
+async def married_ivan_and_maria(imported_first_citizens, citizen_ivan, citizen_maria, citizen_sergei, storage: Storage):
+    import_id = imported_first_citizens
+    update = {
+        "name": "Иванова Мария Леонидовна",
+        "town": "Москва",
+        "street": "Льва Толстого",
+        "building": "16к7стр5",
+        "apartment": 7,
+        "relatives": [1],
+    }
+    await storage.update_citizen(import_id, citizen_maria.citizen_id, update)
+    citizen_ivan = await storage.retrieve_citizen(import_id, citizen_ivan.citizen_id)
+    citizen_maria = await storage.retrieve_citizen(import_id, citizen_maria.citizen_id)
+    citizen_sergei = await storage.retrieve_citizen(import_id, citizen_sergei.citizen_id)
+    # ASSERT
+    # Иван и Мария теперь родня.
+    assert citizen_ivan.citizen_id in citizen_maria.relatives
+    assert citizen_maria.citizen_id in citizen_ivan.relatives
+    # Сергей и Иван также все еще братья.
+    assert citizen_sergei.citizen_id in citizen_ivan.relatives
+    assert citizen_ivan.citizen_id in citizen_sergei.relatives
+

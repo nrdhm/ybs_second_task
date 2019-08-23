@@ -1,5 +1,4 @@
 import pytest
-from gift_app.storage import Storage
 from gift_app.models import Citizen
 
 
@@ -73,3 +72,31 @@ async def test_relative_clean_bidirectional(
     assert rv.status == 200, await rv.json()
     jsn = await rv.json()
     assert not jsn["data"]["relatives"]
+
+
+async def test_maria_can_divorce(http, imported_first_citizens, married_ivan_and_maria, citizen_maria, citizen_sergei, citizen_ivan, storage):
+    """Чисто гипотетически, Мария может развестись с Иваном.
+    """
+    # ARRANGE
+    import_id = imported_first_citizens
+    data = {
+        "relatives": []
+    }
+    # ACT
+    rv = await http.patch(f"/imports/{import_id}/citizens/{citizen_maria.citizen_id}", json=data)
+    # ASSERT
+    assert rv.status == 200, await rv.json()
+    jsn = await rv.json()
+    assert jsn == {
+        "data": {
+            "citizen_id": 3,
+            "town": "Москва",
+            "street": "Льва Толстого",
+            "building": "16к7стр5",
+            "apartment": 7,
+            "name": "Иванова Мария Леонидовна",
+            "birth_date": "23.11.1986",
+            "gender": "female",
+            "relatives": [],
+        }
+    }
