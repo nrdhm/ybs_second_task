@@ -58,14 +58,17 @@ async def storage(loop, config, test_db, logger):
         tx = conn.transaction()
         await tx.start()
         try:
-            mock = MagicMock(x._pool)
-
             @asynccontextmanager
-            async def foo(*x):
+            async def transaction_mock(*x):
                 yield conn
 
-            mock.transaction.side_effect = foo
-            x._pool = mock
+            async def initialize_mock(*x):
+                return
+
+            x.initialize = MagicMock(x.initialize, side_effect=initialize_mock)
+            x._pool = MagicMock(x._pool)
+            x._pool.transaction.side_effect = transaction_mock
+
             yield x
         finally:
             await tx.rollback()
