@@ -45,4 +45,3 @@ async def test_can_list_citizens(http, imported_first_citizens, married_ivan_and
             },
         ]
     }
-

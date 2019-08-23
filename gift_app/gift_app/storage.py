@@ -70,9 +70,7 @@ class Storage:
             await conn.fetchrow(relative_table.insert().values(relative_insert_args))
             return import_id
 
-    async def retrieve_citizen(
-        self, import_id: int, citizen_id: int
-    ) -> Citizen:
+    async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
         async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
             citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
             if not citizen:
@@ -81,9 +79,7 @@ class Storage:
                 )
             return citizen
 
-    async def list_citizens(
-        self, import_id: int
-    ) -> List[Citizen]:
+    async def list_citizens(self, import_id: int) -> List[Citizen]:
         async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
             citizens = await self._list_citizens(conn, import_id)
             return citizens
@@ -97,7 +93,11 @@ class Storage:
                     conn, import_id, citizen_id, citizen_update.pop("relatives")
                 )
             if citizen_update:
-                stmt = citizen_table.update().where(citizen_table.c.citizen_id == citizen_id).values(**citizen_update)
+                stmt = (
+                    citizen_table.update()
+                    .where(citizen_table.c.citizen_id == citizen_id)
+                    .values(**citizen_update)
+                )
                 await conn.fetchrow(stmt)
             new_citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
             assert new_citizen
@@ -131,7 +131,9 @@ class Storage:
             )
         for relative in to_add:
             if not await self._check_citizen_exists(conn, import_id, relative):
-                raise InvalidUsage.bad_request(f'Родственник #{relative} не существует в наборе #{import_id}.')
+                raise InvalidUsage.bad_request(
+                    f"Родственник #{relative} не существует в наборе #{import_id}."
+                )
             await conn.fetchrow(
                 relative_table.insert().values(
                     import_id=import_id,
@@ -191,7 +193,9 @@ class Storage:
         if not row:
             return None
         citizen = _citizen_from_row(row)
-        relatives = await self._retrieve_citizen_relatives_ids(conn, import_id, citizen_id)
+        relatives = await self._retrieve_citizen_relatives_ids(
+            conn, import_id, citizen_id
+        )
         citizen.relatives = relatives
         return citizen
 
@@ -204,13 +208,13 @@ class Storage:
             .order_by(citizen_table.c.citizen_id)
         )
         relatives_rows = await conn.fetch(
-            relative_table.select()
-            .where(relative_table.c.import_id == import_id)
+            relative_table.select().where(relative_table.c.import_id == import_id)
         )
         relatives_map = {
             citizen_id: list(map(itemgetter("citizen_id"), relatives_it))
-            for citizen_id, relatives_it in
-            groupby(relatives_rows, key=itemgetter("relative_citizen_id"))
+            for citizen_id, relatives_it in groupby(
+                relatives_rows, key=itemgetter("relative_citizen_id")
+            )
         }
         citizens = []
         for citizen_row in citizens_rows:
@@ -337,6 +341,7 @@ async def drop_tables(conn: asyncpg.connection.Connection):
 
     stmt = f"DROP SEQUENCE IF EXISTS {import_seq.name}"
     await conn.execute(stmt)
+
 
 def _citizen_from_row(row) -> Citizen:
     citizen = Citizen(

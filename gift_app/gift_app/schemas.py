@@ -114,7 +114,7 @@ class CitizenUpdateSchema(Schema):
     gender = EnumField(Gender)
     relatives = fields.List(NonNegativeInteger())
 
-    @validates('relatives')
+    @validates("relatives")
     def validate_relatives(self, relatives):
         if len(relatives) != len(set(relatives)):
             raise ValidationError(f"Список родственников неуникален")

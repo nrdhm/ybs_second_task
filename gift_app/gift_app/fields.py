@@ -17,6 +17,6 @@ class EnumField(fields.Field):
 
     def _deserialize(self, value, attr, data, **kwargs):
         if value not in self.__valid_names:
-            self.fail('validator_failed')
+            self.fail("validator_failed")
         enum_value = getattr(self.__enum, value)
         return enum_value

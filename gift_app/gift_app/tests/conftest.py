@@ -58,6 +58,7 @@ async def storage(loop, config, test_db, logger):
         tx = conn.transaction()
         await tx.start()
         try:
+
             @asynccontextmanager
             async def transaction_mock(*x):
                 yield conn
@@ -213,7 +214,13 @@ async def imported_first_citizens(storage, first_citizens):
 
 
 @pytest.fixture
-async def married_ivan_and_maria(imported_first_citizens, citizen_ivan, citizen_maria, citizen_sergei, storage: Storage):
+async def married_ivan_and_maria(
+    imported_first_citizens,
+    citizen_ivan,
+    citizen_maria,
+    citizen_sergei,
+    storage: Storage,
+):
     import_id = imported_first_citizens
     update = {
         "name": "Иванова Мария Леонидовна",
@@ -226,7 +233,9 @@ async def married_ivan_and_maria(imported_first_citizens, citizen_ivan, citizen_
     await storage.update_citizen(import_id, citizen_maria.citizen_id, update)
     citizen_ivan = await storage.retrieve_citizen(import_id, citizen_ivan.citizen_id)
     citizen_maria = await storage.retrieve_citizen(import_id, citizen_maria.citizen_id)
-    citizen_sergei = await storage.retrieve_citizen(import_id, citizen_sergei.citizen_id)
+    citizen_sergei = await storage.retrieve_citizen(
+        import_id, citizen_sergei.citizen_id
+    )
     # ASSERT
     # Иван и Мария теперь родня.
     assert citizen_ivan.citizen_id in citizen_maria.relatives
@@ -234,4 +243,3 @@ async def married_ivan_and_maria(imported_first_citizens, citizen_ivan, citizen_
     # Сергей и Иван также все еще братья.
     assert citizen_sergei.citizen_id in citizen_ivan.relatives
     assert citizen_ivan.citizen_id in citizen_sergei.relatives
-

@@ -14,5 +14,8 @@ def expect_json_body(view_function):
             return await view_function(self, request)
         except json.decoder.JSONDecodeError as exc:
             self.logger.exception(exc)
-            return web.json_response({"error": "Expecting a valid json body. Try again."}, status=400)
+            return web.json_response(
+                {"error": "Expecting a valid json body. Try again."}, status=400
+            )
+
     return view_function_wrapper

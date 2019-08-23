@@ -46,9 +46,7 @@ async def test_cannot_send_invalid_relatives(
     # ARRANGE
     import_id = imported_first_citizens
     citizen_id = citizen_maria.citizen_id
-    data = {
-        "relatives": [4],
-    }
+    data = {"relatives": [4]}
     # ACT
     rv = await http.patch(f"/imports/{import_id}/citizens/{citizen_id}", json=data)
     # ASSERT
@@ -56,16 +54,14 @@ async def test_cannot_send_invalid_relatives(
 
 
 async def test_relative_clean_bidirectional(
-    http, citizen_ivan: Citizen,  citizen_sergei: Citizen, imported_first_citizens: int
+    http, citizen_ivan: Citizen, citizen_sergei: Citizen, imported_first_citizens: int
 ):
     """Удаление родственных связей должно быть двусторонним.
     """
     # ARRANGE
     import_id = imported_first_citizens
     citizen_id = citizen_ivan.citizen_id
-    data = {
-        "relatives": [],
-    }
+    data = {"relatives": []}
     # ACT
     rv = await http.patch(f"/imports/{import_id}/citizens/{citizen_id}", json=data)
     # ASSERT
@@ -74,16 +70,24 @@ async def test_relative_clean_bidirectional(
     assert not jsn["data"]["relatives"]
 
 
-async def test_maria_can_divorce(http, imported_first_citizens, married_ivan_and_maria, citizen_maria, citizen_sergei, citizen_ivan, storage):
+async def test_maria_can_divorce(
+    http,
+    imported_first_citizens,
+    married_ivan_and_maria,
+    citizen_maria,
+    citizen_sergei,
+    citizen_ivan,
+    storage,
+):
     """Чисто гипотетически, Мария может развестись с Иваном.
     """
     # ARRANGE
     import_id = imported_first_citizens
-    data = {
-        "relatives": []
-    }
+    data = {"relatives": []}
     # ACT
-    rv = await http.patch(f"/imports/{import_id}/citizens/{citizen_maria.citizen_id}", json=data)
+    rv = await http.patch(
+        f"/imports/{import_id}/citizens/{citizen_maria.citizen_id}", json=data
+    )
     # ASSERT
     assert rv.status == 200, await rv.json()
     jsn = await rv.json()

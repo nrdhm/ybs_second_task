@@ -40,12 +40,25 @@ class ApplicationModule(Module):
     @singleton
     @provider
     def provide_app(
-        self, config: Config, storage: Storage, logger: logging.Logger, imports_views: ImportsView,
+        self,
+        config: Config,
+        storage: Storage,
+        logger: logging.Logger,
+        imports_views: ImportsView,
     ) -> web.Application:
         app = web.Application(middlewares=[create_error_middleware(logger)])
         app.router.add_routes([web.post("/imports", imports_views.import_citizens)])
-        app.router.add_routes([web.patch("/imports/{import_id}/citizens/{citizen_id}", imports_views.update_citizen)])
-        app.router.add_routes([web.get("/imports/{import_id}/citizens", imports_views.list_citizens)])
+        app.router.add_routes(
+            [
+                web.patch(
+                    "/imports/{import_id}/citizens/{citizen_id}",
+                    imports_views.update_citizen,
+                )
+            ]
+        )
+        app.router.add_routes(
+            [web.get("/imports/{import_id}/citizens", imports_views.list_citizens)]
+        )
 
         async def init_storage(app):
             await storage.initialize()
