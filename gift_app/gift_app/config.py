@@ -15,6 +15,8 @@ class DbConfig:
     port: int
 
 
+# TODO python-dotenv для разбора перменных окружения.
+
 class Config:
     """Конфиг приложения.
 
