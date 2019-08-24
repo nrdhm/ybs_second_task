@@ -47,6 +47,8 @@ class CitizenSchema(Schema):
         Родственные связи должны быть двусторонними.
         У одного жителя не могут родственники не могут повторяться.
         """
+        if not many:
+            return data
         relatives_graph = {}
         for x in data:
             relatives = set(x["relatives"])
@@ -72,36 +74,15 @@ class CitizenSchema(Schema):
     def validate_citizens_ids_unique(self, data, many=False, **kwargs):
         """У жителей должны быть уникальные citizen_id.
         """
+        if not many:
+            return data
         ids = [x["citizen_id"] for x in data]
         if len(ids) != len(set(ids)):
             raise ValidationError(f"citizen_id жителей не могут повторяться.")
 
-    @post_load(pass_many=True)
-    def make_citizens(self, data, many=False, **kwargs):
-        """Создать и вернуть модели жителей из валидированных данных.
-        """
-        relatives_graph = {x["citizen_id"]: set(x["relatives"]) for x in data}
-        citizen_for_id = {}
-        # Сначала создать всех жителей.
-        for x in data:
-            citizen = Citizen(
-                citizen_id=x["citizen_id"],
-                town=x["town"],
-                street=x["street"],
-                building=x["building"],
-                apartment=x["apartment"],
-                name=x["name"],
-                birth_date=x["birth_date"],
-                gender=x["gender"],
-            )
-            citizen_for_id[citizen.citizen_id] = citizen
-        # Потом установить родственные связи.
-        for citizen_id, relative_ids in relatives_graph.items():
-            citizen = citizen_for_id[citizen_id]
-            for relative_id in relative_ids:
-                relative = citizen_for_id[relative_id]
-                citizen.relatives.append(relative)
-        return citizen_for_id.values()
+    @post_load
+    def make_citizen(self, data, **kw):
+        return Citizen(**data)
 
 
 class CitizenUpdateSchema(Schema):

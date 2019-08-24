@@ -4,6 +4,8 @@ from functools import wraps
 
 
 def expect_json_body(view_function):
+    """Декоратор для валидации входных данных на соответствие json формату.
+    """
     @wraps(view_function)
     async def view_function_wrapper(self, request: web.Request):
         try:
