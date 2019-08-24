@@ -214,8 +214,19 @@ async def import_batch_first(storage, first_citizens):
 
 
 @pytest.fixture
-async def import_batch_second(storage, first_citizens):
-    import_id = await storage.import_citizens(first_citizens)
+async def second_citizens(citizen_ivan, citizen_sergei, citizen_maria):
+    """У Марии из этого набора день рождения в апреле.
+    """
+    citizen_maria.birth_date = citizen_maria.birth_date.replace(month=4)
+    citizen_maria.relatives = [citizen_ivan.citizen_id]
+    citizen_ivan.relatives = [citizen_sergei.citizen_id, citizen_maria.citizen_id]
+    citizen_sergei.relatives = [citizen_ivan.citizen_id]
+    return [citizen_ivan, citizen_sergei, citizen_maria]
+
+
+@pytest.fixture
+async def import_batch_second(storage, second_citizens):
+    import_id = await storage.import_citizens(second_citizens)
     return import_id
 
 

@@ -1,6 +1,7 @@
 import json
+from functools import partial, wraps
+
 from aiohttp import web
-from functools import wraps
 
 
 def expect_json_body(view_function):
@@ -22,3 +23,20 @@ def expect_json_body(view_function):
             )
 
     return view_function_wrapper
+
+
+def json_response(function=None, status=200):
+    """Сериализовать результат в json.
+    """
+
+    def decorator(view_function):
+        @wraps(view_function)
+        async def view_function_wrapper(self, request: web.Request):
+            result = await view_function(self, request)
+            return web.json_response(result, status=status)
+
+        return view_function_wrapper
+
+    if function and callable(function):
+        return decorator(function)
+    return decorator

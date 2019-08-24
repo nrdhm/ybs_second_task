@@ -4,7 +4,7 @@ from injector import inject
 
 from .schemas import ImportsSchema, CitizenUpdateSchema, CitizenSchema
 from .storage import Storage
-from .decorators import expect_json_body
+from .decorators import expect_json_body, json_response
 
 
 @inject
@@ -14,6 +14,7 @@ class ImportsView:
         self.logger = logger
 
     @expect_json_body
+    @json_response(status=201)
     async def import_citizens(self, request):
         jsn = await request.json()
 
@@ -23,9 +24,10 @@ class ImportsView:
         import_id = await self.storage.import_citizens(import_message.citizens)
 
         result = {"data": {"import_id": import_id}}
-        return web.json_response(result, status=201)
+        return result
 
     @expect_json_body
+    @json_response
     async def update_citizen(self, request: web.Request):
         import_id = int(request.match_info["import_id"])
         citizen_id = int(request.match_info["citizen_id"])
@@ -41,11 +43,19 @@ class ImportsView:
         )
         schema = CitizenSchema()
         result = {"data": schema.dump(citizen)}
-        return web.json_response(result, status=200)
+        return result
 
+    @json_response
     async def list_citizens(self, request: web.Request):
         import_id = int(request.match_info["import_id"])
         citizens = await self.storage.list_citizens(import_id)
         schema = CitizenSchema(many=True)
         result = {"data": schema.dump(citizens)}
-        return web.json_response(result, status=200)
+        return result
+
+    @json_response
+    async def list_birthdays(self, request: web.Request):
+        import_id = int(request.match_info["import_id"])
+        report = await self.storage.birthdays_report(import_id)
+        result = {"data": report}
+        return result

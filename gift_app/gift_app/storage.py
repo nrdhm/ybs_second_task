@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 from .config import Config
 from .errors import InvalidUsage
-from .models import Citizen, Gender, ImportMessage
+from .models import Citizen, Gender
 
 
 class Storage:
@@ -72,6 +72,8 @@ class Storage:
 
     async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
         async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            if not await self._import_exists(conn, import_id):
+                raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
             citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
             if not citizen:
                 raise InvalidUsage.not_found(
@@ -105,6 +107,50 @@ class Storage:
             new_citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
             assert new_citizen
             return new_citizen
+
+    async def birthdays_report(self, import_id: int) -> dict:
+        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+            if not await self._import_exists(conn, import_id):
+                raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
+
+            # select date_part('month', c.birth_date) as month, count(c.citizen_id), r.relative_citizen_id
+            # from citizen as c join relative as r on c.citizen_id = r.citizen_id and c.import_id = r.import_id
+            # where c.import_id = 7084
+            # group by month, r.relative_citizen_id
+
+            birth_month = sa.func.date_part("month", citizen_table.c.birth_date).cast(
+                sa.Integer
+            )
+            joined = citizen_table.join(
+                relative_table,
+                sa.and_(
+                    citizen_table.c.citizen_id == relative_table.c.citizen_id,
+                    citizen_table.c.import_id == relative_table.c.import_id,
+                ),
+            )
+            query = (
+                sa.select(
+                    [
+                        birth_month,
+                        relative_table.c.relative_citizen_id,
+                        sa.func.count(citizen_table.c.citizen_id),
+                    ]
+                )
+                .select_from(joined)
+                .where(citizen_table.c.import_id == import_id)
+                .order_by(birth_month)
+                .group_by(birth_month, relative_table.c.relative_citizen_id)
+            )
+            rows = await conn.fetch(query)
+            report = {n: [] for n in range(1, 13)}
+            for month_num, citizen_id, relatives_birthdays_cnt in rows:
+                report[month_num].append(
+                    {"citizen_id": citizen_id, "presents": relatives_birthdays_cnt}
+                )
+            return report
+
+    ######################################## ########################################
+    ######################################## ########################################
 
     async def _update_citizen_relatives(
         self,
@@ -168,10 +214,6 @@ class Storage:
         for row in r:
             relative_ids.append(row["relative_citizen_id"])
         return relative_ids
-
-    async def next_import_id(self) -> int:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
-            return await self._next_import_id(conn)
 
     async def _check_citizen_exists(
         self, conn: asyncpg.connection.Connection, import_id: int, citizen_id: int

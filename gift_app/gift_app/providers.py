@@ -47,17 +47,21 @@ class ApplicationModule(Module):
         imports_views: ImportsView,
     ) -> web.Application:
         app = web.Application(middlewares=[create_error_middleware(logger)])
-        app.router.add_routes([web.post("/imports", imports_views.import_citizens)])
         app.router.add_routes(
             [
+                web.post("/imports", imports_views.import_citizens),
+                web.get(
+                    "/imports/{import_id:\d+}/citizens", imports_views.list_citizens
+                ),
                 web.patch(
-                    "/imports/{import_id}/citizens/{citizen_id}",
+                    "/imports/{import_id:\d+}/citizens/{citizen_id:\d+}",
                     imports_views.update_citizen,
-                )
+                ),
+                web.get(
+                    "/imports/{import_id:\d+}/citizens/birthdays",
+                    imports_views.list_birthdays,
+                ),
             ]
-        )
-        app.router.add_routes(
-            [web.get("/imports/{import_id}/citizens", imports_views.list_citizens)]
         )
 
         async def init_storage(app):
