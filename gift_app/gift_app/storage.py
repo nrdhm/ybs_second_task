@@ -71,7 +71,7 @@ class Storage:
             return import_id
 
     async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+        async with self.pool.acquire() as conn:  # type: asyncpg.connection.Connection
             if not await self._import_exists(conn, import_id):
                 raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
             citizen = await self._retrieve_citizen(conn, import_id, citizen_id)
@@ -82,7 +82,7 @@ class Storage:
             return citizen
 
     async def list_citizens(self, import_id: int) -> List[Citizen]:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+        async with self.pool.acquire() as conn:  # type: asyncpg.connection.Connection
             if not await self._import_exists(conn, import_id):
                 raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
             citizens = await self._list_citizens(conn, import_id)
@@ -109,7 +109,7 @@ class Storage:
             return new_citizen
 
     async def birthdays_report(self, import_id: int) -> dict:
-        async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
+        async with self.pool.acquire() as conn:  # type: asyncpg.connection.Connection
             if not await self._import_exists(conn, import_id):
                 raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
 

@@ -63,12 +63,17 @@ async def storage(loop, config, test_db, logger):
             async def transaction_mock(*x):
                 yield conn
 
+            @asynccontextmanager
+            async def acquire_mock(*x):
+                yield conn
+
             async def initialize_mock(*x):
                 return
 
             x.initialize = MagicMock(x.initialize, side_effect=initialize_mock)
             x._pool = MagicMock(x._pool)
             x._pool.transaction.side_effect = transaction_mock
+            x._pool.acquire.side_effect = acquire_mock
 
             yield x
         finally:
