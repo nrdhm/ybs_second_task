@@ -1,8 +1,8 @@
-async def test_can_list_citizens(http, imported_first_citizens, married_ivan_and_maria):
+async def test_can_list_citizens(http, import_batch_first, married_ivan_and_maria):
     """Можно получить список жителей.
     """
     # ARRANGE
-    import_id = imported_first_citizens
+    import_id = import_batch_first
     # ACT
     rv = await http.get(f"/imports/{import_id}/citizens")
     # ASSERT
@@ -48,7 +48,7 @@ async def test_can_list_citizens(http, imported_first_citizens, married_ivan_and
 
 
 async def test_cannot_list_unknown_import(
-    http, imported_first_citizens, married_ivan_and_maria
+    http, import_batch_first, married_ivan_and_maria
 ):
     """Можно получить список жителей.
     """

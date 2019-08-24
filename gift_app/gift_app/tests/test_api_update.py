@@ -3,12 +3,12 @@ from gift_app.models import Citizen
 
 
 async def test_can_update_citizen(
-    http, citizen_maria: Citizen, imported_first_citizens: int
+    http, citizen_maria: Citizen, import_batch_first: int
 ):
     """Можно обновить инфу о жителе.
     """
     # ARRANGE
-    import_id = imported_first_citizens
+    import_id = import_batch_first
     citizen_id = citizen_maria.citizen_id
     data = {
         "name": "Иванова Мария Леонидовна",
@@ -39,12 +39,12 @@ async def test_can_update_citizen(
 
 
 async def test_cannot_send_invalid_relatives(
-    http, citizen_maria: Citizen, imported_first_citizens: int
+    http, citizen_maria: Citizen, import_batch_first: int
 ):
     """Нельзя отправить айди несуществющих в наборе жителей в качестве родственников.
     """
     # ARRANGE
-    import_id = imported_first_citizens
+    import_id = import_batch_first
     citizen_id = citizen_maria.citizen_id
     data = {"relatives": [4]}
     # ACT
@@ -54,12 +54,12 @@ async def test_cannot_send_invalid_relatives(
 
 
 async def test_relative_clean_bidirectional(
-    http, citizen_ivan: Citizen, citizen_sergei: Citizen, imported_first_citizens: int
+    http, citizen_ivan: Citizen, citizen_sergei: Citizen, import_batch_first: int
 ):
     """Удаление родственных связей должно быть двусторонним.
     """
     # ARRANGE
-    import_id = imported_first_citizens
+    import_id = import_batch_first
     citizen_id = citizen_ivan.citizen_id
     data = {"relatives": []}
     # ACT
@@ -72,7 +72,7 @@ async def test_relative_clean_bidirectional(
 
 async def test_maria_can_divorce(
     http,
-    imported_first_citizens,
+    import_batch_first,
     married_ivan_and_maria,
     citizen_maria,
     citizen_sergei,
@@ -82,7 +82,7 @@ async def test_maria_can_divorce(
     """Чисто гипотетически, Мария может развестись с Иваном.
     """
     # ARRANGE
-    import_id = imported_first_citizens
+    import_id = import_batch_first
     data = {"relatives": []}
     # ACT
     rv = await http.patch(

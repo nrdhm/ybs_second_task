@@ -208,20 +208,22 @@ async def first_citizens(citizen_ivan, citizen_sergei, citizen_maria):
 
 
 @pytest.fixture
-async def imported_first_citizens(storage, first_citizens):
+async def import_batch_first(storage, first_citizens):
+    import_id = await storage.import_citizens(first_citizens)
+    return import_id
+
+
+@pytest.fixture
+async def import_batch_second(storage, first_citizens):
     import_id = await storage.import_citizens(first_citizens)
     return import_id
 
 
 @pytest.fixture
 async def married_ivan_and_maria(
-    imported_first_citizens,
-    citizen_ivan,
-    citizen_maria,
-    citizen_sergei,
-    storage: Storage,
+    import_batch_first, citizen_ivan, citizen_maria, citizen_sergei, storage: Storage
 ):
-    import_id = imported_first_citizens
+    import_id = import_batch_first
     update = {
         "name": "Иванова Мария Леонидовна",
         "town": "Москва",

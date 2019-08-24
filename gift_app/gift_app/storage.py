@@ -97,6 +97,7 @@ class Storage:
             if citizen_update:
                 stmt = (
                     citizen_table.update()
+                    .where(citizen_table.c.import_id == import_id)
                     .where(citizen_table.c.citizen_id == citizen_id)
                     .values(**citizen_update)
                 )
