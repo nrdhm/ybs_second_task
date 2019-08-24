@@ -21,6 +21,7 @@ click = "*"
 gunicorn = "*"
 asyncpgsa = "*"
 asyncpg = "*"
+numpy = "*"
 
 [requires]
 python_version = "3.7"

@@ -4,7 +4,7 @@ from aiohttp import web
 from injector import inject
 
 from .decorators import expect_json_body, json_response
-from .schemas import CitizenSchema, CitizenUpdateSchema, ImportsSchema
+from .schemas import CitizenSchema, CitizenUpdateSchema, ImportsSchema, TownAgeStatSchema
 from .storage import Storage
 
 
@@ -59,4 +59,13 @@ class ImportsView:
         import_id = int(request.match_info["import_id"])
         report = await self.storage.birthdays_report(import_id)
         result = {"data": report}
+        return result
+
+    @json_response
+    async def retrieve_age_stats(self, request: web.Request):
+        import_id = int(request.match_info["import_id"])
+        stats = await self.storage.retrieve_age_stats(import_id)
+        schema = TownAgeStatSchema(many=True)
+        data = schema.dump(stats)
+        result = {"data": data}
         return result

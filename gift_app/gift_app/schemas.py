@@ -102,8 +102,15 @@ class CitizenUpdateSchema(Schema):
 
 
 class ImportsSchema(Schema):
-    citizens = fields.Nested(CitizenSchema(many=True), required=True)
+    citizens = fields.List(fields.Nested(CitizenSchema), required=True)
 
     @post_load
     def make_import_message(self, data, **kw):
         return ImportMessage(citizens=data["citizens"])
+
+
+class TownAgeStatSchema(Schema):
+    town = fields.String()
+    p50 = fields.Float()
+    p75 = fields.Float()
+    p99 = fields.Float()

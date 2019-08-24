@@ -28,3 +28,11 @@ class Citizen:
 @dataclass
 class ImportMessage:
     citizens: List[Citizen]
+
+
+@dataclass
+class TownAgeStat:
+    town: str
+    p50: float
+    p75: float
+    p99: float

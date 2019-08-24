@@ -6,10 +6,11 @@ from typing import List, Optional
 import asyncpg
 import asyncpgsa
 import sqlalchemy as sa
+import numpy as np
 
 from .config import Config
 from .errors import InvalidUsage
-from .models import Citizen, Gender
+from .models import Citizen, Gender, TownAgeStat
 
 
 class Storage:
@@ -148,6 +149,40 @@ class Storage:
                     {"citizen_id": citizen_id, "presents": relatives_birthdays_cnt}
                 )
             return report
+
+    async def retrieve_age_stats(self, import_id: int) -> List[TownAgeStat]:
+        async with self.pool.acquire() as conn:  # type: asyncpg.connection.Connection
+            if not await self._import_exists(conn, import_id):
+                raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
+            town_rows = await conn.fetch(
+                sa.select([
+                    citizen_table.c.town,
+                ])
+                .where(citizen_table.c.import_id == import_id)
+                .order_by(citizen_table.c.town)
+                .distinct()
+            )
+            stats = []
+            for [town] in town_rows:
+                age_rows = await conn.fetch(
+                    sa.select([
+                        sa.func.date_part("year", sa.func.age(citizen_table.c.birth_date))
+                    ])
+                    .where(citizen_table.c.import_id == import_id)
+                    .where(citizen_table.c.town == town)
+                )
+                ages = [row[0] for row in age_rows]
+
+                [p50, p75, p99] = np.percentile(ages, [50, 75, 99])
+                stat = TownAgeStat(
+                    town=town,
+                    p50=round(p50, 2),
+                    p75=round(p75, 2),
+                    p99=round(p99, 2),
+                )
+                stats.append(stat)
+            return stats
+
 
     ######################################## ########################################
     ######################################## ########################################

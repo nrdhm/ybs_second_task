@@ -12,6 +12,7 @@ def imports_sample(citizen_ivan_sample, citizen_sergei_sample, citizen_maria_sam
 async def test_can_import_the_sample(http, imports_sample):
     """Пример импорта из задания работает нормально.
     """
+    print(imports_sample)
     rv = await http.post("/imports", json=imports_sample)
     assert rv.status == 201, await rv.text()
     jsn = await rv.json()

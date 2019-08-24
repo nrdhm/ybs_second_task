@@ -61,6 +61,10 @@ class ApplicationModule(Module):
                     "/imports/{import_id:\d+}/citizens/birthdays",
                     imports_views.list_birthdays,
                 ),
+                web.get(
+                    "/imports/{import_id:\d+}/towns/stat/percentile/age",
+                    imports_views.retrieve_age_stats,
+                ),
             ]
         )
 
