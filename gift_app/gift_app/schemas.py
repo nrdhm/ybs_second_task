@@ -1,4 +1,6 @@
 import datetime as dt
+from functools import partial
+
 from marshmallow import (
     Schema,
     ValidationError,
@@ -8,11 +10,9 @@ from marshmallow import (
     validates,
     validates_schema,
 )
-from functools import partial
 
 from .fields import EnumField
 from .models import Citizen, Gender, ImportMessage
-
 
 NonEmptyString = partial(fields.String, validate=[validate.Length(min=1, max=257)])
 NonNegativeInteger = partial(fields.Integer, validate=[validate.Range(min=0)])

@@ -1,4 +1,5 @@
 import pytest
+
 from gift_app.models import Citizen
 
 

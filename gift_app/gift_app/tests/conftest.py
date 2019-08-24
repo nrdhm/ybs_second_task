@@ -1,8 +1,8 @@
 import asyncio
-import logging
 import datetime as dt
-from unittest.mock import MagicMock
+import logging
 from contextlib import asynccontextmanager
+from unittest.mock import MagicMock
 
 import asyncpg.connection
 import asyncpgsa
@@ -12,8 +12,7 @@ from injector import Binder
 from gift_app.config import Config
 from gift_app.main import init_func
 from gift_app.models import Citizen, Gender
-from gift_app.storage import create_tables
-from gift_app.storage import Storage
+from gift_app.storage import Storage, create_tables
 
 
 @pytest.fixture(scope="session")

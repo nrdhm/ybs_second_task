@@ -1,10 +1,11 @@
 import logging
+
 from aiohttp import web
 from injector import inject
 
-from .schemas import ImportsSchema, CitizenUpdateSchema, CitizenSchema
-from .storage import Storage
 from .decorators import expect_json_body, json_response
+from .schemas import CitizenSchema, CitizenUpdateSchema, ImportsSchema
+from .storage import Storage
 
 
 @inject
