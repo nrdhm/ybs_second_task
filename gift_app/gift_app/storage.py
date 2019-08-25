@@ -43,39 +43,36 @@ class Storage:
         async with self.pool.transaction() as conn:  # type: asyncpg.connection.Connection
             import_id = await self._next_import_id(conn)
             await self._create_import(conn, import_id)
-            citizen_insert_args = []
-            relative_insert_args = []
-            for citizen in citizens:
-                citizen_insert_args.append(
-                    dict(
-                        import_id=import_id,
-                        citizen_id=citizen.citizen_id,
-                        town=citizen.town,
-                        street=citizen.street,
-                        building=citizen.building,
-                        apartment=citizen.apartment,
-                        name=citizen.name,
-                        birth_date=citizen.birth_date,
-                        gender=citizen.gender,
-                    )
-                )
-                for relative in citizen.relatives:
-                    relative_insert_args.append(
+            MAX_ARGS_LEN = 1000
+            while citizens:
+                citizens_batch = citizens[:MAX_ARGS_LEN]
+                citizens = citizens[MAX_ARGS_LEN:]
+                citizen_insert_args = []
+                relative_insert_args = []
+                for citizen in citizens_batch:
+                    citizen_insert_args.append(
                         dict(
                             import_id=import_id,
                             citizen_id=citizen.citizen_id,
-                            relative_citizen_id=relative,
+                            town=citizen.town,
+                            street=citizen.street,
+                            building=citizen.building,
+                            apartment=citizen.apartment,
+                            name=citizen.name,
+                            birth_date=citizen.birth_date,
+                            gender=citizen.gender,
                         )
                     )
-            MAX_ARGS_LEN = 1000
-            while citizen_insert_args:
-                args = citizen_insert_args[:MAX_ARGS_LEN]
-                citizen_insert_args = citizen_insert_args[MAX_ARGS_LEN:]
-                await conn.fetchrow(citizen_table.insert().values(args))
-            while relative_insert_args:
-                args = relative_insert_args[:MAX_ARGS_LEN]
-                relative_insert_args = relative_insert_args[MAX_ARGS_LEN:]
-                await conn.fetchrow(relative_table.insert().values(args))
+                    for relative in citizen.relatives:
+                        relative_insert_args.append(
+                            dict(
+                                import_id=import_id,
+                                citizen_id=citizen.citizen_id,
+                                relative_citizen_id=relative,
+                            )
+                        )
+                await conn.fetchrow(citizen_table.insert().values(citizen_insert_args))
+                await conn.fetchrow(relative_table.insert().values(relative_insert_args))
             return import_id
 
     async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
