@@ -55,7 +55,7 @@ class ApplicationModule(Module):
     ) -> web.Application:
         logger.info(config)
         app = web.Application(
-            middlewares=[create_error_middleware(logger)], logger=logger
+            middlewares=[create_error_middleware(logger)], logger=logger, client_max_size=2**20 * 100  # 100 mB
         )
         app.router.add_routes(
             [

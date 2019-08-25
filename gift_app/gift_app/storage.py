@@ -67,8 +67,15 @@ class Storage:
                             relative_citizen_id=relative,
                         )
                     )
-            await conn.fetchrow(citizen_table.insert().values(citizen_insert_args))
-            await conn.fetchrow(relative_table.insert().values(relative_insert_args))
+            MAX_ARGS_LEN = 1000
+            while citizen_insert_args:
+                args = citizen_insert_args[:MAX_ARGS_LEN]
+                citizen_insert_args = citizen_insert_args[MAX_ARGS_LEN:]
+                await conn.fetchrow(citizen_table.insert().values(args))
+            while relative_insert_args:
+                args = relative_insert_args[:MAX_ARGS_LEN]
+                relative_insert_args = relative_insert_args[MAX_ARGS_LEN:]
+                await conn.fetchrow(relative_table.insert().values(args))
             return import_id
 
     async def retrieve_citizen(self, import_id: int, citizen_id: int) -> Citizen:
