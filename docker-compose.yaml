@@ -5,10 +5,14 @@ services:
     image: postgres:11-alpine
     volumes:
     - pgdata:/var/lib/postgresql/data
+    env_file:
+    - .env
 
   gift_app:
     command: python -m aiohttp.web -H gift_app -P 8080 gift_app.main:init_func
     entrypoint: sh /wait-for.sh db 5432
+    env_file:
+    - .env
     depends_on:
     - db
 
