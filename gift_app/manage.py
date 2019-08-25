@@ -14,29 +14,24 @@ def cli():
 
 
 @cli.command()
-@click.option("--config", type=click.File("r"))
-def init_db(config):
+def init_db():
     storage = _get_storage()
-    if config:
-        storage.config.read_from_file(config)
 
     async def go():
         await storage.initialize()
-        await storage_module.create_tables(storage.engine)
+        async with storage.pool.acquire() as conn:
+            await storage_module.create_tables(conn)
 
     asyncio.run(go())
 
 
 @cli.command()
-@click.option("--config", type=click.File("r"))
-def drop_db(config):
-    storage = _get_storage()
-    if config:
-        storage.config.read_from_file(config)
-
+def drop_db():
     async def go():
+        storage = _get_storage()
         await storage.initialize()
-        await storage_module.drop_tables(storage.engine)
+        async with storage.pool.acquire() as conn:
+            await storage_module.drop_tables(conn)
 
     asyncio.run(go())
 

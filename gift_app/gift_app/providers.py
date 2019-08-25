@@ -20,21 +20,21 @@ class ApplicationModule(Module):
     @singleton
     @provider
     def provide_logger(self) -> logging.Logger:
-        logging.config.dictConfig({
-            'version': 1,
-            'disable_existing_loggers': False,
-            'formatters': {'default': {
-                'format': '[%(asctime)s][%(levelname)s] %(name)s %(filename)s:%(funcName)s:%(lineno)d | %(message)s'
-            }},
-            'handlers': {'main': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'default'
-            }},
-            'root': {
-                'level': 'INFO',
-                'handlers': ['main']
+        logging.config.dictConfig(
+            {
+                "version": 1,
+                "disable_existing_loggers": False,
+                "formatters": {
+                    "default": {
+                        "format": "[%(asctime)s][%(levelname)s] %(name)s %(filename)s:%(funcName)s:%(lineno)d | %(message)s"
+                    }
+                },
+                "handlers": {
+                    "main": {"class": "logging.StreamHandler", "formatter": "default"}
+                },
+                "root": {"level": "INFO", "handlers": ["main"]},
             }
-        })
+        )
         logger = logging.getLogger(__package__)
         return logger
 
@@ -54,7 +54,9 @@ class ApplicationModule(Module):
         imports_views: ImportsView,
     ) -> web.Application:
         logger.info(config)
-        app = web.Application(middlewares=[create_error_middleware(logger)], logger=logger)
+        app = web.Application(
+            middlewares=[create_error_middleware(logger)], logger=logger
+        )
         app.router.add_routes(
             [
                 web.post("/imports", imports_views.import_citizens),
@@ -73,6 +75,7 @@ class ApplicationModule(Module):
                     "/imports/{import_id:\d+}/towns/stat/percentile/age",
                     imports_views.retrieve_age_stats,
                 ),
+                web.get("/version", imports_views.retrieve_version),
             ]
         )
 

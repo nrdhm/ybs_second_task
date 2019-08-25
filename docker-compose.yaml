@@ -7,14 +7,53 @@ services:
     - pgdata:/var/lib/postgresql/data
     env_file:
     - .env
+    networks:
+    - gift_net
+    deploy:
+      restart_policy:
+        condition: on-failure
+    logging:
+      driver: journald
+
 
   gift_app:
-    command: python -m aiohttp.web -H gift_app -P 8080 gift_app.main:init_func
+    image: nrdhm/private:gift-app
+    build: gift_app
+    command: python -m aiohttp.web -H 0.0.0.0 -P 8080 gift_app.main:init_func
     entrypoint: sh /wait-for.sh db 5432
     env_file:
     - .env
     depends_on:
     - db
+    networks:
+    - gift_net
+    deploy:
+      replicas: 4
+      restart_policy:
+        condition: on-failure
+    logging:
+      driver: journald
+
+  nginx:
+    image: nrdhm/private:gift-app-nginx
+    entrypoint: sh /wait-for.sh gift_app 8080
+    build: nginx
+    networks:
+    - gift_net
+    depends_on:
+    - gift_app
+    deploy:
+      restart_policy:
+        condition: on-failure
+    ports:
+    - 80:80
+    command: sh -c 'nginx -T && nginx'
+    logging:
+      driver: journald
 
 volumes:
   pgdata: {}
+
+networks:
+  gift_net:
+    attachable: true

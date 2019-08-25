@@ -3,6 +3,7 @@ import logging
 from aiohttp import web
 from injector import inject
 
+import gift_app
 from .decorators import expect_json_body, json_response
 from .schemas import (
     CitizenSchema,
@@ -73,4 +74,9 @@ class ImportsView:
         schema = TownAgeStatSchema(many=True)
         data = schema.dump(stats)
         result = {"data": data}
+        return result
+
+    @json_response
+    async def retrieve_version(self, request: web.Request):
+        result = {"data": {"version": gift_app.VERSION}}
         return result
