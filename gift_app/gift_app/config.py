@@ -32,10 +32,7 @@ class Config:
         return f"<Config db={self.db!r}>"
 
     def _update(self):
-        config_vars = merge_dicts(
-            self._env_config_vars,
-            self._overrides,
-        )
+        config_vars = merge_dicts(self._env_config_vars, self._overrides)
         self.db = DbConfig(**config_vars["db"])
 
     def _read_env(self) -> dict:

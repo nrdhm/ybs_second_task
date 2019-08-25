@@ -4,7 +4,12 @@ from aiohttp import web
 from injector import inject
 
 from .decorators import expect_json_body, json_response
-from .schemas import CitizenSchema, CitizenUpdateSchema, ImportsSchema, TownAgeStatSchema
+from .schemas import (
+    CitizenSchema,
+    CitizenUpdateSchema,
+    ImportsSchema,
+    TownAgeStatSchema,
+)
 from .storage import Storage
 
 

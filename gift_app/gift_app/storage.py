@@ -155,9 +155,7 @@ class Storage:
             if not await self._import_exists(conn, import_id):
                 raise InvalidUsage.not_found(f"Набора данных №{import_id} не найдено.")
             town_rows = await conn.fetch(
-                sa.select([
-                    citizen_table.c.town,
-                ])
+                sa.select([citizen_table.c.town])
                 .where(citizen_table.c.import_id == import_id)
                 .order_by(citizen_table.c.town)
                 .distinct()
@@ -165,9 +163,13 @@ class Storage:
             stats = []
             for [town] in town_rows:
                 age_rows = await conn.fetch(
-                    sa.select([
-                        sa.func.date_part("year", sa.func.age(citizen_table.c.birth_date))
-                    ])
+                    sa.select(
+                        [
+                            sa.func.date_part(
+                                "year", sa.func.age(citizen_table.c.birth_date)
+                            )
+                        ]
+                    )
                     .where(citizen_table.c.import_id == import_id)
                     .where(citizen_table.c.town == town)
                 )
@@ -175,14 +177,10 @@ class Storage:
 
                 [p50, p75, p99] = np.percentile(ages, [50, 75, 99])
                 stat = TownAgeStat(
-                    town=town,
-                    p50=round(p50, 2),
-                    p75=round(p75, 2),
-                    p99=round(p99, 2),
+                    town=town, p50=round(p50, 2), p75=round(p75, 2), p99=round(p99, 2)
                 )
                 stats.append(stat)
             return stats
-
 
     ######################################## ########################################
     ######################################## ########################################
