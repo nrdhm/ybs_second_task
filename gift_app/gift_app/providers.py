@@ -1,4 +1,5 @@
 import logging
+import logging.config
 
 from aiohttp import web
 from injector import Module, provider, singleton
@@ -14,13 +15,26 @@ class ApplicationModule(Module):
     @provider
     def provide_config(self, logger: logging.Logger) -> Config:
         config = Config()
-        logger.info(config)
         return config
 
     @singleton
     @provider
     def provide_logger(self) -> logging.Logger:
-        logging.basicConfig(level=logging.INFO)
+        logging.config.dictConfig({
+            'version': 1,
+            'disable_existing_loggers': False,
+            'formatters': {'default': {
+                'format': '[%(asctime)s][%(levelname)s] %(name)s %(filename)s:%(funcName)s:%(lineno)d | %(message)s'
+            }},
+            'handlers': {'main': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'default'
+            }},
+            'root': {
+                'level': 'INFO',
+                'handlers': ['main']
+            }
+        })
         logger = logging.getLogger(__package__)
         return logger
 
@@ -39,7 +53,8 @@ class ApplicationModule(Module):
         logger: logging.Logger,
         imports_views: ImportsView,
     ) -> web.Application:
-        app = web.Application(middlewares=[create_error_middleware(logger)])
+        logger.info(config)
+        app = web.Application(middlewares=[create_error_middleware(logger)], logger=logger)
         app.router.add_routes(
             [
                 web.post("/imports", imports_views.import_citizens),

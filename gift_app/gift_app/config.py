@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from environs import Env
 
@@ -8,17 +8,14 @@ from .utils import merge_dicts
 @dataclass
 class DbConfig:
     name: str
-    password: str
     username: str
     host: str
     port: int
+    password: str = field(repr=False)
 
 
 class Config:
     """Конфиг приложения.
-
-    Может прочитать конфиг из yaml файла или переменных окружения.
-    Переменные окружения перезаписывают все остальные.
     """
 
     db: DbConfig
