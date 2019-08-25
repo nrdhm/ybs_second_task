@@ -7,7 +7,7 @@ services:
     - pgdata:/var/lib/postgresql/data
 
   gift_app:
-    command: python -m aiohttp.web -H gift_app -P 8080 gift_app.main:init_func --config config.yaml
+    command: python -m aiohttp.web -H gift_app -P 8080 gift_app.main:init_func
     entrypoint: sh /wait-for.sh db 5432
     depends_on:
     - db

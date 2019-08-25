@@ -1,4 +1,0 @@
-db:
-  name: gift_db
-  username: postgres
-  host: localhost

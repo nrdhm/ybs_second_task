@@ -1,6 +1,4 @@
-import argparse
 import logging
-import sys
 
 from aiohttp import web
 from injector import Module, provider, singleton
@@ -16,11 +14,6 @@ class ApplicationModule(Module):
     @provider
     def provide_config(self, logger: logging.Logger) -> Config:
         config = Config()
-        parser = argparse.ArgumentParser()
-        parser.add_argument("--config", type=open)
-        args, _ = parser.parse_known_args(sys.argv)
-        if args.config:
-            config.read_from_file(args.config)
         logger.info(config)
         return config
 

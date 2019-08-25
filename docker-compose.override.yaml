@@ -5,11 +5,11 @@ services:
     ports:
       - 5432:5432
     env_file:
-    - gift_app/local.env
+    - gift_app/.env
 
   gift_app:
     build: gift_app
     ports:
       - 8080:8080
     env_file:
-    - gift_app/local.env
+    - gift_app/.env

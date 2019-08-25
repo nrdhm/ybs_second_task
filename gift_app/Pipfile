@@ -22,6 +22,7 @@ gunicorn = "*"
 asyncpgsa = "*"
 asyncpg = "*"
 numpy = "*"
+environs = "*"
 
 [requires]
 python_version = "3.7"
