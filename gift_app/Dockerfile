@@ -6,18 +6,21 @@ RUN mkdir -p /opt/app
 WORKDIR /opt/app
 
 
-RUN apk update
+# RUN apk update
 
-RUN apk add tzdata \
+RUN apk add --no-cache tzdata \
     && ln -sf /usr/share/zoneinfo/Europe/Moscow /etc/localtime \
     && echo "Europe/Moscow" >  /etc/timezone
 
 
 ADD Pipfile Pipfile.lock /opt/app/
-RUN pip install pipenv
-RUN apk add g++ \
+RUN pip install --no-cache-dir pipenv
+RUN apk add --virtual .build-deps g++ \
+    && mkdir /tmp/pipenv \
+    && export PIPENV_CACHE_DIR=/tmp/pipenv \
     && pipenv install --deploy --system \
-    && apk del g++
+    && rm -rf /tmp/pipenv \
+    && apk del .build-deps
 
 COPY wait-for.sh /
 
