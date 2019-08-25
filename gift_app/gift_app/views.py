@@ -80,3 +80,7 @@ class ImportsView:
     async def retrieve_version(self, request: web.Request):
         result = {"data": {"version": gift_app.VERSION}}
         return result
+
+    @json_response
+    async def create_a_problem(self, request: web.Request):
+        raise RuntimeError("We have a problem")

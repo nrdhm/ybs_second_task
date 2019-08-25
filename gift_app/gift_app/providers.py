@@ -75,7 +75,8 @@ class ApplicationModule(Module):
                     "/imports/{import_id:\d+}/towns/stat/percentile/age",
                     imports_views.retrieve_age_stats,
                 ),
-                web.get("/version", imports_views.retrieve_version),
+                web.get("/x/version", imports_views.retrieve_version),
+                web.post("/x/problem", imports_views.create_a_problem),
             ]
         )
 
